@@ -1,3 +1,6 @@
 [submodule "dependencies/cryptopp"]
 	path = dependencies/cryptopp
 	url = https://github.com/weidai11/cryptopp.git
+[submodule "dependencies/libsocket"]
+	path = dependencies/libsocket
+	url = https://github.com/dermesser/libsocket.git
