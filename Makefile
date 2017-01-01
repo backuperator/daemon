@@ -6,14 +6,17 @@ SRC_DIRS ?= ./helper ./src
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := -lc++
+LIBS := -lc++ -lssl -lcrypto -lcryptopp
 
 INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -lssl
+LIB_DIRS := dependencies/cryptopp
+LIB_FLAGS := $(addprefix -L,$(LIB_DIRS))
+
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2
 CPPFLAGS ?= $(CFLAGS) -std=c++11
-LDFLAGS ?= -L/usr/local/lib $(LIBS)
+LDFLAGS ?= -L/usr/local/lib $(LIB_FLAGS) $(LIBS)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
