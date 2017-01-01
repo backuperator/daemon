@@ -8,11 +8,11 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 LIBS := -lc++
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP
-CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -std=c++11
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -lssl
+CPPFLAGS ?= $(CFLAGS) -std=c++11
 LDFLAGS ?= -L/usr/local/lib $(LIBS)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
