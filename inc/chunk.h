@@ -7,6 +7,8 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
+#include <cstdint>
+
 /**
  * File entry; specifies information about a single file in a chunk.
  */

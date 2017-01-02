@@ -6,7 +6,7 @@ SRC_DIRS ?= ./helper ./src
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ ssl crypto cryptopp boost_system
+LIBS := c++ ssl crypto cryptopp boost_system boost_filesystem
 
 INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include

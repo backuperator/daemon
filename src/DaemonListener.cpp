@@ -1,4 +1,5 @@
 #include "DaemonListener.hpp"
+#include "ClientHandler.hpp"
 
 #include <iostream>
 
@@ -90,5 +91,9 @@ DaemonListener::~DaemonListener() {
  * object, and in turn, a client handling thread.
  */
 void DaemonListener::handleClient(int fd) {
+	// Create a client handler
+	ClientHandler *handler = new ClientHandler(fd);
 
+	// Start the handler thread
+	handler->start();
 }
