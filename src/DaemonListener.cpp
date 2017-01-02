@@ -10,7 +10,7 @@ using namespace std;
  */
 DaemonListener::DaemonListener() {
     // Resolve the local address
-    const char* hostname = 0;
+    const char* hostname = NULL;
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -20,17 +20,19 @@ DaemonListener::DaemonListener() {
     hints.ai_protocol = 0;
     hints.ai_flags = (AI_PASSIVE | AI_ADDRCONFIG);
 
-    struct addrinfo *res = 0;
+    struct addrinfo *res = NULL;
     int err = getaddrinfo(hostname, "5583", &hints, &res);
 
     if(err != 0) {
         cout << "Failed to resolve local address: " << err << endl;
+        exit(-1);
     }
 
     // Create the server socket
     this->socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if(this->socket_fd == -1) {
         cerr << "Couldn't crerate socket: " << strerror(errno) << endl;
+        exit(-1);
     }
 
     // Allow re-use of address
@@ -45,6 +47,7 @@ DaemonListener::DaemonListener() {
 
     if(errno != 0) {
         cerr << "Couldn't bind socket: " << strerror(errno) << endl;
+        exit(-1);
     }
 
     freeaddrinfo(res);
@@ -52,6 +55,7 @@ DaemonListener::DaemonListener() {
     // Listen on the address
     if(listen(this->socket_fd, SOMAXCONN)) {
         cout << "Could not open socket for listening: " << errno << endl;
+        exit(-1);
     }
 }
 
@@ -67,9 +71,14 @@ DaemonListener::~DaemonListener() {
  * its own process created via the use of fork(2).
  */
  void DaemonListener::startListening() {
+     cout << "Waiting for connections..." << endl << flush;
+
      for(;;) {
          // Accept connection, blocking if needed
-         int session_fd = accept(this->socket_fd, 0, 0);
+         struct sockaddr_storage sa;
+         socklen_t sa_len = sizeof(sa);
+
+         int session_fd = accept(this->socket_fd, (struct sockaddr *) &sa, &sa_len);
 
          // Check for error
          if(session_fd == -1) {
