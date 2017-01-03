@@ -1,8 +1,11 @@
-#include <sys/socket.h>
-
 /**
  * Client request handler
  */
+#ifndef CLIENTHANDLER_H
+#define CLIENTHANDLER_H
+
+#include <sys/socket.h>
+
 class ClientHandler {
     public:
         ClientHandler(int);
@@ -15,3 +18,5 @@ class ClientHandler {
     private:
         int socket;
 };
+
+#endif

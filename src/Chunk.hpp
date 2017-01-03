@@ -2,6 +2,9 @@
  * The chunk is the container for various files' data on tape. It also holds
  * metadata for each file, and some info about the job as a whole.
  */
+#ifndef CHUNK_H
+#define CHUNK_H
+
 #include <vector>
 #include <cstdint>
 
@@ -27,3 +30,5 @@ class Chunk {
 
 		void allocateBackingStore();
 };
+
+#endif
