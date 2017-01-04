@@ -21,6 +21,7 @@
 #include <ctime>
 #include <queue>
 #include <vector>
+#include <mutex>
 
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -46,6 +47,8 @@ class BackupJob {
     	boost::uuids::uuid uuid;
 
         std::vector<BackupFile *> backupFiles;
+
+		std::mutex chunkQueueMutex;
         std::queue<Chunk *> chunkQueue;
 
 		void beginDirectoryScan();
@@ -57,7 +60,8 @@ class BackupJob {
 		void directoryScannerEntry();
 
 		void chunkCreatorEntry();
-		int chunkAddFile(BackupFile *file, Chunk *chunk);
+		void _chunkFinished(Chunk *chunk);
+		int _chunkAddFile(BackupFile *file, Chunk *chunk);
 };
 
 #endif

@@ -155,20 +155,21 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 
 		// mark the file as fully written
 		file->wasWrittenToChunk = file->fullyWrittenToChunk = true;
-		
+
 		return Add_File_Status::Success;
 	}
 
 
 	// The file needs to be split.
-	_addFilePartial(file);
-	return Add_File_Status::Partial;
+	return _addFilePartial(file);
 }
 
 /**
  * Attempt to fit a file, splitting it as needed.
  */
-void Chunk::_addFilePartial(BackupFile *file) {
+Chunk::Add_File_Status Chunk::_addFilePartial(BackupFile *file) {
+	const size_t pageSz = sysconf(_SC_PAGESIZE);
+
 	// If this file wasn't written yet, we start from offset 0.
 	if(file->wasWrittenToChunk == false) {
 		file->rangeInChunk.fileOffset = 0;
@@ -177,7 +178,42 @@ void Chunk::_addFilePartial(BackupFile *file) {
 		file->fullyWrittenToChunk = false;
 	}
 
-	LOG(FATAL) << "TODO: Split files if needed";
+	// Figure out (approximately) how much of the file can be fit in the chunk.
+	size_t bytesFree = this->backingStoreMaxSize - this->backingStoreBytesUsed
+												 - kHeaderAreaReservedSpace;
+	size_t bytesLeft = file->bytesRemaining();
+
+	// The entire rest of the file fits into this chunk.
+	if(bytesFree > bytesLeft) {
+		// Update the blob struct
+		file->rangeInChunk.fileOffset += file->rangeInChunk.length;
+		file->rangeInChunk.length = 0;
+
+		file->rangeInChunk.length = file->bytesRemaining();
+
+		file->fullyWrittenToChunk = true;
+
+		// Store it
+		this->files.push_back(file);
+		return Add_File_Status::Success;
+	}
+
+	/*
+	 * Otherwise, figure out approximately how much of this file can fit in the rest
+	 * of the chunk. Once we arrive at a result, we round DOWN to the nearest
+	 * multiple of the system's page size.
+	 */
+	size_t bytesInThisChunk = bytesFree;
+
+	if((bytesInThisChunk % pageSz) != 0) {
+		bytesInThisChunk -= (bytesInThisChunk % pageSz);
+	}
+
+	file->rangeInChunk.fileOffset += file->rangeInChunk.length;
+	file->rangeInChunk.length = bytesInThisChunk;
+
+	// This file can be partially added.
+	return Add_File_Status::Partial;
 }
 
 
@@ -239,7 +275,7 @@ void Chunk::finalize() {
 		BackupFile *file = *it;
 		chunk_file_entry_t *entry = (chunk_file_entry_t *) fileEntries;
 
-		DLOG(INFO) << "Placing file " << file->path;
+		// DLOG(INFO) << "Placing file " << file->path;
 
 		// Copy the entry into the header and increment the write ptr
 		memcpy(entry, file->fileEntry, file->fileEntrySize);
@@ -269,8 +305,8 @@ void Chunk::finalize() {
 			entry->blobLenBytes = file->rangeInChunk.length;
 			entry->blobStartOff = file->rangeInChunk.blobOffsetInChunk;
 
-			DLOG(INFO) << "\tWriting " << entry->blobLenBytes << " to "
-					   << entry->blobStartOff;
+			/*DLOG(INFO) << "\tWriting " << entry->blobLenBytes << " to "
+					   << entry->blobStartOff;*/
 
 
 			// Copy the data

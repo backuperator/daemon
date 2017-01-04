@@ -61,7 +61,7 @@ class Chunk {
 		std::vector<BackupFile *> files;
 
 
-		void _addFilePartial(BackupFile *file);
+		Add_File_Status _addFilePartial(BackupFile *file);
 
 		// allocates backing store
 		void _allocateBackingStore();

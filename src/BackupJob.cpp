@@ -121,7 +121,7 @@ void BackupJob::chunkCreatorEntry() {
 			}
 
 			// Attempt to add it
-			status = this->chunkAddFile(*it, chunk);
+			status = _chunkAddFile(*it, chunk);
 
 			// Check for errors
 			if(status == -1) {
@@ -131,10 +131,7 @@ void BackupJob::chunkCreatorEntry() {
 
 			// If this chunk is done, get rid of it.
 			if(status == 1) {
-				chunk->finalize();
-				this->chunkQueue.push(chunk);
-				DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
-						   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
+				_chunkFinished(chunk);
 
 				// NULL will create a new chunk on the next iteration
 				chunk = NULL;
@@ -144,13 +141,26 @@ void BackupJob::chunkCreatorEntry() {
 		} while(status != 0);
 	}
 
-	// Push the last chunk into the array.
+	// done
+	_chunkFinished(chunk);
+	LOG(INFO) << "Finished chunk creation.";
+}
+
+/**
+ * Moves the chunk indicated to the finished chunk queue, where it is picked up by
+ * the post-processor thread.
+ */
+void BackupJob::_chunkFinished(Chunk *chunk) {
+	// finalize the chunk
 	chunk->finalize();
+
+	// push it into the queue, after acquiring the mutex
+	this->chunkQueueMutex.lock();
 	this->chunkQueue.push(chunk);
+	this->chunkQueueMutex.unlock();
+
 	DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
 			   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
-
-	LOG(INFO) << "Finished chunk creation.";
 }
 
 /**
@@ -160,7 +170,7 @@ void BackupJob::chunkCreatorEntry() {
  * occurred. If 1 is returned, call this function again with the same file, but a
  * new chunk.
  */
-int BackupJob::chunkAddFile(BackupFile *file, Chunk *chunk) {
+int BackupJob::_chunkAddFile(BackupFile *file, Chunk *chunk) {
 	Chunk::Add_File_Status status;
 
 	// Attempt to add this file to the chunk
