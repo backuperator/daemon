@@ -6,12 +6,12 @@ SRC_DIRS ?= ./helper ./src
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ ssl crypto cryptopp boost_system boost_filesystem
+LIBS := c++ ssl crypto cryptopp boost_system boost_filesystem boost_thread-mt glog
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies dependencies/glog/src
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
-LIB_DIRS := dependencies/cryptopp
+LIB_DIRS := dependencies/cryptopp dependencies/glog/.libs
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
 CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2

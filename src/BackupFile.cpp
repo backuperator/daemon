@@ -1,5 +1,7 @@
 #include "BackupFile.hpp"
 
+#include <glog/logging.h>
+
 #include <iostream>
 #include <sys/stat.h>
 
@@ -12,8 +14,9 @@ using boost::filesystem::path;
  * Creates a file object from the file with the given path. This does not load
  * any data from disk yet - metadata is only loaded when requested.
  */
-BackupFile::BackupFile(boost::filesystem::path path) {
+BackupFile::BackupFile(boost::filesystem::path path, BackupFile *parent) {
 	this->path = path;
+	this->parent = parent;
 
 	// Create an UUID for the file
 	boost::uuids::basic_random_generator<boost::mt19937> gen;

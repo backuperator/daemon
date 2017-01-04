@@ -13,6 +13,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/thread.hpp>
 
 #include "Chunk.hpp"
 #include "BackupFile.hpp"
@@ -22,17 +23,25 @@ class BackupJob {
         BackupJob(std::string);
         ~BackupJob();
 
+		void start();
+		void cancel();
+
     protected:
         std::string root;
     	boost::filesystem::path rootPath;
 
     	boost::uuids::uuid uuid;
 
-        std::vector<BackupFile> backupFiles;
+        std::vector<BackupFile *> backupFiles;
         std::queue<Chunk> chunkQueue;
 
-    private:
+		void beginDirectoryScan();
+		void scanDirectory(boost::filesystem::path path, BackupFile *);
 
+    private:
+		boost::thread *directoryScanner;
+
+		void directoryScannerEntry();
 };
 
 #endif

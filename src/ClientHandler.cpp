@@ -1,5 +1,7 @@
 #include "ClientHandler.hpp"
 
+#include <glog/logging.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>

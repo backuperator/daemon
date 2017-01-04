@@ -13,13 +13,14 @@
 
 class BackupFile {
 	public:
-		BackupFile(boost::filesystem::path);
+		BackupFile(boost::filesystem::path, BackupFile *);
 		~BackupFile();
 
 		int fetchMetadata();
 
 	protected:
 		boost::filesystem::path path;
+		BackupFile *parent;
 
 	private:
 		boost::uuids::uuid uuid;

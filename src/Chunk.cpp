@@ -1,5 +1,7 @@
 #include "Chunk.hpp"
 
+#include <glog/logging.h>
+
 #include <iostream>
 #include <sys/mman.h>
 

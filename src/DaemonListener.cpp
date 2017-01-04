@@ -1,7 +1,9 @@
 #include "DaemonListener.hpp"
-#include "ClientHandler.hpp"
 
-#include <iostream>
+#include <glog/logging.h>
+
+#include "ClientHandler.hpp"
+#include "BackupJob.hpp"
 
 using namespace std;
 
@@ -16,47 +18,44 @@ DaemonListener::DaemonListener() {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
 
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET; // could be AF_UNSPEC, but that's broken somehow
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
-    hints.ai_flags = (AI_PASSIVE | AI_ADDRCONFIG);
+    hints.ai_flags = (AI_PASSIVE);
 
     struct addrinfo *res = NULL;
     int err = getaddrinfo(hostname, "5583", &hints, &res);
 
     if(err != 0) {
-        cout << "Failed to resolve local address: " << err << endl;
-        exit(-1);
+        LOG(FATAL) << "Failed to resolve local address: " << err;
     }
 
     // Create the server socket
     this->socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if(this->socket_fd == -1) {
-        cerr << "Couldn't crerate socket: " << strerror(errno) << endl;
-        exit(-1);
+    if(this->socket_fd == -1 || errno != 0) {
+        PLOG(FATAL) << "Couldn't crerate socket";
     }
 
     // Allow re-use of address
     int reuseaddr = 1;
     if(setsockopt(this->socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
                   sizeof(reuseaddr)) == -1) {
-        cerr << "Couldn't set SO_REUSEADDR: " << strerror(errno) << endl;
+        PLOG(FATAL) << "Couldn't set SO_REUSEADDR";
     }
 
     // Bind to address
+	errno = 0;
     bind(this->socket_fd, res->ai_addr, res->ai_addrlen);
 
     if(errno != 0) {
-        cerr << "Couldn't bind socket: " << strerror(errno) << endl;
-        exit(-1);
+        PLOG(FATAL) << "Couldn't bind socket";
     }
 
     freeaddrinfo(res);
 
     // Listen on the address
     if(listen(this->socket_fd, SOMAXCONN)) {
-        cout << "Could not open socket for listening: " << errno << endl;
-        exit(-1);
+        PLOG(FATAL) << "Could not open socket for listening";
     }
 }
 
@@ -72,7 +71,11 @@ DaemonListener::~DaemonListener() {
  * its own process created via the use of fork(2).
  */
  void DaemonListener::startListening() {
-     cout << "Waiting for connections..." << endl << flush;
+     LOG(INFO) << "Waiting for connections..." << endl;
+
+	 // lel
+	 BackupJob *boop = new BackupJob("/Volumes/Datas/Software/spheres/spheres/");
+	 boop->start();
 
      for(;;) {
          // Accept connection, blocking if needed
@@ -87,7 +90,7 @@ DaemonListener::~DaemonListener() {
                  continue;
              }
 
-             cout << "Could not accept connection: " << errno << endl;
+             PLOG(ERROR) << "Could not accept connection: ";
          }
 
          // Handle the client's requests
