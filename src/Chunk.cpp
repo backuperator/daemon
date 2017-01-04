@@ -267,6 +267,7 @@ void Chunk::finalize() {
 
 	header->version = 0x00010000;
 	header->num_file_entries = this->files.size();
+	header->chunk_length = this->backingStoreActualSize;
 
 
 	// Copy all the file headers, as well as file data itself

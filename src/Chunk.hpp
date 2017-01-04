@@ -11,6 +11,8 @@
 #include "BackupFile.hpp"
 
 class Chunk {
+	friend class ChunkPostprocessor;
+
 	public:
 		typedef enum {
 			// The entire file was added.

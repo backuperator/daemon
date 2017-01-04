@@ -30,6 +30,7 @@
 
 #include "Chunk.hpp"
 #include "BackupFile.hpp"
+#include "ChunkPostprocessor.hpp"
 
 
 class BackupJob {
@@ -56,6 +57,7 @@ class BackupJob {
 
     private:
 		ctpl::thread_pool *directoryScannerPool;
+		ChunkPostprocessor *postProcessor;
 
 		void directoryScannerEntry();
 

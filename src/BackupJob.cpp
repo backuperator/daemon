@@ -23,6 +23,10 @@ BackupJob::BackupJob(std::string root) {
 	// Create the thread pool
 	this->directoryScannerPool = new ctpl::thread_pool(DIR_ITERATOR_POOL_SZ);
 	LOG(INFO) << "Using " << DIR_ITERATOR_POOL_SZ << " threads for directory iteration";
+
+	// Create chunk postprocessor
+	this->postProcessor = new ChunkPostprocessor(&this->chunkQueueMutex,
+												 &this->chunkQueue);
 }
 
 /**
@@ -161,6 +165,9 @@ void BackupJob::_chunkFinished(Chunk *chunk) {
 
 	DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
 			   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
+
+	// Notify chunk postprocessor
+	this->postProcessor->newChunkAvailable();
 }
 
 /**
