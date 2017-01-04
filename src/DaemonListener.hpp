@@ -16,7 +16,7 @@ class DaemonListener {
         void startListening();
 
     protected:
-        void handleClient(int);
+        void handleClient(int, struct sockaddr_storage);
 
     private:
         int socket_fd;

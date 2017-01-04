@@ -91,7 +91,7 @@ DaemonListener::~DaemonListener() {
          }
 
          // Handle the client's requests
-         this->handleClient(session_fd);
+         this->handleClient(session_fd, sa);
      }
  }
 
@@ -99,7 +99,7 @@ DaemonListener::~DaemonListener() {
  * Handles a client, given their socket handle. This will create a new handler
  * object, and in turn, a client handling thread.
  */
-void DaemonListener::handleClient(int fd) {
+void DaemonListener::handleClient(int fd, struct sockaddr_storage client_addr) {
 	// Create a client handler
 	ClientHandler *handler = new ClientHandler(fd);
 
