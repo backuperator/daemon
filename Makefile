@@ -6,7 +6,7 @@ SRC_DIRS ?= ./helper ./src
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ ssl crypto cryptopp boost_system boost_filesystem boost_thread-mt glog
+LIBS := c++ crypto cryptopp boost_system boost_filesystem glog protobuf
 
 INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies dependencies/glog/src
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
