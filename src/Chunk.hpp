@@ -41,6 +41,8 @@ class Chunk {
 
 		size_t getUsedSpace() { return this->backingStoreBytesUsed; }
 
+		void finalize();
+
 	protected:
 
 	private:

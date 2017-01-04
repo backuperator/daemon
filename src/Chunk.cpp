@@ -154,3 +154,20 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 
 	return Add_File_Status::Partial;
 }
+
+
+/**
+ * Actually creates the raw chunk data in memory for all files.
+ */
+void Chunk::finalize() {
+	// Allocate backing store
+	this->allocateBackingStore();
+
+	// Fill chunk header
+	chunk_header_t *header = (chunk_header_t *) this->backingStore;
+	memset(header, 0, sizeof(chunk_header_t));
+
+	header->version = 0x00010000;
+
+	header->num_file_entries = this->files.size();
+}

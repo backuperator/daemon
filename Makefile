@@ -14,7 +14,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 LIB_DIRS := dependencies/cryptopp dependencies/glog/.libs
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer
 CPPFLAGS ?= $(CFLAGS) -std=c++11
 LDFLAGS ?= -L/usr/local/lib $(LIB_FLAGS)
 
