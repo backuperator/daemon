@@ -21,7 +21,7 @@ BackupJob::BackupJob(std::string root) {
 	this->uuid = gen();
 
 	// Create the thread pool
-	this->directoryScannerPool = new ctpl::thread_pool(DIR_ITERATOR_POOL_SZ);
+	this->threadPool = new ctpl::thread_pool(DIR_ITERATOR_POOL_SZ);
 	LOG(INFO) << "Using " << DIR_ITERATOR_POOL_SZ << " threads for directory iteration";
 
 	// Create chunk postprocessor
@@ -33,7 +33,8 @@ BackupJob::BackupJob(std::string root) {
  * Terminates all threads related to the backup job, and performs any cleanup.
  */
 BackupJob::~BackupJob() {
-	// Kill all the threads
+	// Cancel the job
+	this->cancel();
 }
 
 /**
@@ -41,10 +42,10 @@ BackupJob::~BackupJob() {
  */
 void BackupJob::start() {
 	// Start the directory scan.
-	this->beginDirectoryScan();
+	this->_beginDirectoryScan();
 
 	// TODO: Make this run on its own thread pls
-	this->chunkCreatorEntry();
+	this->_chunkCreatorEntry();
 }
 
 /**
@@ -52,7 +53,18 @@ void BackupJob::start() {
  * blocking call.
  */
 void BackupJob::cancel() {
+	// Kill the thread pool
+	this->threadPool->stop(true);
+	delete this->threadPool;
 
+	// Get rid of the post-processor
+	delete this->postProcessor;
+
+	// De-allocate any generated chunks
+	while(!this->chunkQueue.empty()) {
+		delete this->chunkQueue.front();
+		this->chunkQueue.pop();
+	}
 }
 
 
@@ -60,33 +72,34 @@ void BackupJob::cancel() {
  * Builds the list of files to be backed up, i.e. iterating a directory in a
  * recursive manner.
  */
-void BackupJob::beginDirectoryScan() {
+void BackupJob::_beginDirectoryScan() {
 	// Submit the initial job to the thread pool
-	this->directoryScannerPool->push(boost::bind(&BackupJob::directoryScannerEntry, this));
+	this->threadPool->push(boost::bind(&BackupJob::_directoryScannerEntry, this));
 
-	this->directoryScannerPool->stop(true);
+	this->threadPool->stop(true);
 	LOG(INFO) << "Found " << this->backupFiles.size() << " files/directories";
 }
 
 /**
  * Entry point for the directory scanner thread.
  */
-void BackupJob::directoryScannerEntry() {
+void BackupJob::_directoryScannerEntry() {
 	LOG(INFO) << "Beginning directory scan of " << this->rootPath;
 
 	// Create a file entry for the root directory
-	BackupFile *root = new BackupFile(this->rootPath, NULL);
+	BackupFile root = BackupFile(this->rootPath, NULL);
 	this->backupFiles.push_back(root);
+
 	this->backupFiles.reserve(10000);
 
 	// Begin scanning the root directory.
-	this->scanDirectory(this->rootPath, root);
+	this->_scanDirectory(this->rootPath, &root);
 }
 
 /**
  * Scans a single directory. This function is called recursively.
  */
-void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
+void BackupJob::_scanDirectory(path inPath, BackupFile *parent) {
 	// if it's a directory, recurse through it
     if(is_directory(inPath)) {
         for(auto& entry : boost::make_iterator_range(directory_iterator(inPath), {})) {
@@ -94,13 +107,14 @@ void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
 			DLOG_EVERY_N(INFO, 100) << "Found " << this->backupFiles.size() << " items so far";
 
 			// create a backup file for this entry
-			BackupFile *file = new BackupFile(path(entry), parent);
+			BackupFile file = BackupFile(path(entry), parent);
 			this->backupFiles.push_back(file);
 
             // Is what we found a directory?
 			if(is_directory(entry)) {
 				// If so, submit a job to scan it to the thread pool
-				this->directoryScannerPool->push(boost::bind(&BackupJob::scanDirectory, this, path(entry), file));
+				this->threadPool->push(boost::bind(&BackupJob::_scanDirectory, this,
+												   path(entry), &file));
 			}
 		}
     }
@@ -110,7 +124,7 @@ void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
  * Pulls files out of the queue one by one, creating new chunks for them. When
  * a chunk is completed, it's pushed onto the chunk queue.
  */
-void BackupJob::chunkCreatorEntry() {
+void BackupJob::_chunkCreatorEntry() {
 	LOG(INFO) << "Beginning chunk creation (chunk size = " << CHUNK_MAX_SIZE << ")";
 
 	Chunk *chunk = NULL;
@@ -125,11 +139,11 @@ void BackupJob::chunkCreatorEntry() {
 			}
 
 			// Attempt to add it
-			status = _chunkAddFile(*it, chunk);
+			status = _chunkAddFile(&(*it), chunk);
 
 			// Check for errors
 			if(status == -1) {
-				LOG(FATAL) << "Error adding file " << (*it)->getPath();
+				LOG(FATAL) << "Error adding file " << (*it).getPath();
 				break;
 			}
 
@@ -147,7 +161,7 @@ void BackupJob::chunkCreatorEntry() {
 
 	// done
 	_chunkFinished(chunk);
-	LOG(INFO) << "Finished chunk creation.";
+	LOG(INFO) << "Finished generating chunks";
 }
 
 /**

@@ -41,27 +41,26 @@ class BackupJob {
 		void start();
 		void cancel();
 
-    protected:
+    private:
         std::string root;
     	boost::filesystem::path rootPath;
 
     	boost::uuids::uuid uuid;
 
-        std::vector<BackupFile *> backupFiles;
+        std::vector<BackupFile> backupFiles;
 
 		std::mutex chunkQueueMutex;
         std::queue<Chunk *> chunkQueue;
 
-		void beginDirectoryScan();
-		void scanDirectory(boost::filesystem::path path, BackupFile *);
-
-    private:
-		ctpl::thread_pool *directoryScannerPool;
+		ctpl::thread_pool *threadPool;
 		ChunkPostprocessor *postProcessor;
 
-		void directoryScannerEntry();
+		void _beginDirectoryScan();
+		void _scanDirectory(boost::filesystem::path path, BackupFile *);
 
-		void chunkCreatorEntry();
+		void _directoryScannerEntry();
+
+		void _chunkCreatorEntry();
 		void _chunkFinished(Chunk *chunk);
 		int _chunkAddFile(BackupFile *file, Chunk *chunk);
 };

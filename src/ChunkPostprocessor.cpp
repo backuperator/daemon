@@ -18,14 +18,26 @@ ChunkPostprocessor::ChunkPostprocessor(std::mutex *mutex, std::queue<Chunk *> *q
 	LOG(INFO) << "Using " << POSTPROCESSOR_THREAD_POOL_SIZE
 			  << " threads for chunk postprocessing";
 
-  this->threadPool->push(boost::bind(&ChunkPostprocessor::_workerEntry, this));
+	this->threadPool->push(boost::bind(&ChunkPostprocessor::_workerEntry, this));
+
+	// Set up tape writer
+	this->writer = new TapeWriter();
 }
 
 /**
  * Cleans up the postprocessor.
  */
 ChunkPostprocessor::~ChunkPostprocessor() {
+	// Stop the main worker thread
+	this->shouldRun = false;
+	this->chunkSignal.notify_all();
 
+	// Wait for all other worker processes to stop
+	this->threadPool->stop(true);
+	delete this->threadPool;
+
+	// Delete the writer
+	delete this->writer;
 }
 
 /**
@@ -69,9 +81,12 @@ void ChunkPostprocessor::_processChunk(Chunk *chunk) {
 	DLOG(INFO) << "Got chunk to post-process";
 
 	// Set the chunk index, write backup UUID, then encrypt if needed
-	chunk_header_t *header = (chunk_header_t *) chunk->backingStore;
+	chunk->setChunkNumber(this->lastChunkIndex++);
 
-	header->chunk_index = this->lastChunkIndex++;
+	// Disallow any further writes to the chunk.
+	chunk->stopWriting();
 
 	// When we're done, forward it to the tape writer.
+	DLOG(INFO) << "Finished post-processing chunk " << chunk->getChunkNumber();
+	this->writer->addChunkToQueue(chunk);
 }

@@ -20,6 +20,7 @@
 #include <CTPL/ctpl.h>
 
 #include "Chunk.hpp"
+#include "TapeWriter.hpp"
 
 class ChunkPostprocessor {
 	public:
@@ -28,8 +29,6 @@ class ChunkPostprocessor {
 
 		void newChunkAvailable();
 
-	protected:
-
 	private:
 		ctpl::thread_pool *threadPool;
 
@@ -37,11 +36,11 @@ class ChunkPostprocessor {
 		std::queue<Chunk *> *queue;
 
 		std::condition_variable chunkSignal;
-
 		bool shouldRun = true;
 
 		std::atomic<uint64_t> lastChunkIndex;
 
+		TapeWriter *writer;
 
 		void _workerEntry();
 		void _processChunk(Chunk *);

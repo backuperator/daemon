@@ -62,9 +62,9 @@ typedef struct  __attribute__((packed)) {
 	// Identifier of the backup job; can be cross-referenced with database.
     uint8_t backupUuid[16];
 	// Index of this chunk in the backup; first chunk is zero.
-    uint64_t chunk_index;
+    uint64_t chunkIndex;
 	// Size of this chunk, in bytes.
-	uint64_t chunk_length;
+	uint64_t chunkLenBytes;
 	// Identifier of the tape that contains this chunk
 	char tape_label[8];
 
@@ -81,7 +81,7 @@ typedef struct  __attribute__((packed)) {
 	uint8_t reserved[0x4000];
 
 	// Number of files contained in this chunk.
-	uint32_t num_file_entries;
+	uint32_t numFileEntries;
 	// An array of file entries, containing num_file_entries entries.
 	chunk_file_entry_t entry[];
 } chunk_header_t;

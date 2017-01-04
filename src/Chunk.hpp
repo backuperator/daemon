@@ -44,6 +44,14 @@ class Chunk {
 		size_t getUsedSpace() { return this->backingStoreBytesUsed; }
 
 		void finalize();
+		void stopWriting();
+
+		void setChunkNumber(uint64_t idx) {
+			((chunk_header_t *) this->backingStore)->chunkIndex = idx;
+		}
+		uint64_t getChunkNumber() {
+			return ((chunk_header_t *) this->backingStore)->chunkIndex;
+		}
 
 	protected:
 

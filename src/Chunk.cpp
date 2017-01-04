@@ -266,8 +266,8 @@ void Chunk::finalize() {
 	memset(header, 0, sizeof(chunk_header_t));
 
 	header->version = 0x00010000;
-	header->num_file_entries = this->files.size();
-	header->chunk_length = this->backingStoreActualSize;
+	header->numFileEntries = this->files.size();
+	header->chunkLenBytes = this->backingStoreActualSize;
 
 
 	// Copy all the file headers, as well as file data itself
@@ -321,4 +321,12 @@ void Chunk::finalize() {
 			file->finishedReading();
 		}
 	}
+}
+
+/**
+ * Changes the protection flags on the backing store to disallow any further writes,
+ * once the chunk is ready to be written out.
+ */
+void Chunk::stopWriting() {
+	mprotect(this->backingStore, this->backingStoreActualSize, PROT_READ);
 }
