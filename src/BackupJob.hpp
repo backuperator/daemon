@@ -10,7 +10,12 @@
  * Defines how many threads should be allocated for iterating the directory to
  * be backed up.
  */
-#define DIR_ITERATOR_POOL_SZ		4
+#define DIR_ITERATOR_POOL_SZ 4
+
+/**
+ * Maximum chunk size, in bytes.
+ */
+#define CHUNK_MAX_SIZE ((size_t) (1024LL * 1024 * 1024 * 2))
 
 #include <string>
 #include <ctime>
@@ -41,7 +46,7 @@ class BackupJob {
     	boost::uuids::uuid uuid;
 
         std::vector<BackupFile *> backupFiles;
-        std::queue<Chunk> chunkQueue;
+        std::queue<Chunk *> chunkQueue;
 
 		void beginDirectoryScan();
 		void scanDirectory(boost::filesystem::path path, BackupFile *);
@@ -50,6 +55,9 @@ class BackupJob {
 		ctpl::thread_pool *directoryScannerPool;
 
 		void directoryScannerEntry();
+
+		void chunkCreatorEntry();
+		int chunkAddFile(BackupFile *file, Chunk *chunk);
 };
 
 #endif

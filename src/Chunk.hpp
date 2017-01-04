@@ -39,20 +39,22 @@ class Chunk {
 
 		Add_File_Status addFile(BackupFile *);
 
+		size_t getUsedSpace() { return this->backingStoreBytesUsed; }
+
 	protected:
 
 	private:
-		std::size_t backingStoreActualSize;
-		std::size_t backingStoreMaxSize;
+		std::size_t backingStoreActualSize = 0;
+		std::size_t backingStoreMaxSize = 0;
 
-		std::size_t backingStoreBytesUsed;
+		std::size_t backingStoreBytesUsed = 0;
 
 		void *backingStore;
 
 		// length of the reserved header area, in bytes
-		static const std::size_t header_area_size = (1024 * 512);
+		static const std::size_t kHeaderAreaReservedSpace = (1024 * 512);
 		// minimum amount of free space to add a file
-		static const std::size_t min_free_space = (1024 * 64);
+		static const std::size_t kMinFreeSpace = (1024 * 1024);
 
 		std::vector<BackupFile *> files;
 

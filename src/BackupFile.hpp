@@ -23,6 +23,10 @@ class BackupFile {
 
 		int fetchMetadata();
 
+		boost::filesystem::path getPath() {
+			return this->path;
+		}
+
 	protected:
 		boost::filesystem::path path;
 		BackupFile *parent;
@@ -40,12 +44,14 @@ class BackupFile {
 		off_t lastByte = 0;
 
 		// file descriptor for the file
-		FILE *fd;
+		FILE *fd = NULL;
 		// memory-mapped file
-		void *mappedFile;
+		void *mappedFile = NULL;
 		// buffer to the generated file entry structure
-		chunk_file_entry_t *fileEntry;
+		chunk_file_entry_t *fileEntry = NULL;
+		size_t fileEntrySize = 0;
 
+		void prepareChunkMetadata();
 		void beginReading();
 		void finishedReading();
 

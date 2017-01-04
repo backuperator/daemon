@@ -74,7 +74,7 @@ DaemonListener::~DaemonListener() {
      LOG(INFO) << "Waiting for connections..." << endl;
 
 	 // lel
-	 BackupJob *boop = new BackupJob("/Volumes/Datas/Software/spheres/spheres/");
+	 BackupJob *boop = new BackupJob("/Users/tristan/temp/backuptest/");
 	 boop->start();
 
      for(;;) {

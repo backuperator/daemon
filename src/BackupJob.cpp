@@ -38,6 +38,9 @@ BackupJob::~BackupJob() {
 void BackupJob::start() {
 	// Start the directory scan.
 	this->beginDirectoryScan();
+
+	// TODO: Make this run on its own thread pls
+	this->chunkCreatorEntry();
 }
 
 /**
@@ -57,7 +60,6 @@ void BackupJob::beginDirectoryScan() {
 	// Submit the initial job to the thread pool
 	this->directoryScannerPool->push(boost::bind(&BackupJob::directoryScannerEntry, this));
 
-	// Wait for the thread pool to complete
 	this->directoryScannerPool->stop(true);
 	LOG(INFO) << "Found " << this->backupFiles.size() << " files/directories";
 }
@@ -84,7 +86,7 @@ void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
     if(is_directory(inPath)) {
         for(auto& entry : boost::make_iterator_range(directory_iterator(inPath), {})) {
 			// DLOG(INFO) << "Found " << entry;
-			LOG_EVERY_N(INFO, 100) << "Found " << this->backupFiles.size() << " items so far";
+			DLOG_EVERY_N(INFO, 100) << "Found " << this->backupFiles.size() << " items so far";
 
 			// create a backup file for this entry
 			BackupFile *file = new BackupFile(path(entry), parent);
@@ -97,4 +99,97 @@ void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
 			}
 		}
     }
+}
+
+/**
+ * Pulls files out of the queue one by one, creating new chunks for them. When
+ * a chunk is completed, it's pushed onto the chunk queue.
+ */
+void BackupJob::chunkCreatorEntry() {
+	LOG(INFO) << "Beginning chunk creation (chunk size = " << CHUNK_MAX_SIZE << ")";
+
+	Chunk *chunk = NULL;
+	int status;
+
+	for(auto it = this->backupFiles.begin(); it != this->backupFiles.end(); it++) {
+		do {
+			// If there isn't a chunk, create one
+			if(chunk == NULL) {
+				chunk = new Chunk(CHUNK_MAX_SIZE);
+				DLOG(INFO) << "Crated new chunk";
+			}
+
+			// Attempt to add it
+			status = this->chunkAddFile(*it, chunk);
+
+			// Check for errors
+			if(status == -1) {
+				LOG(FATAL) << "Error adding file " << (*it)->getPath();
+				break;
+			}
+
+			// If this chunk is done, get rid of it.
+			if(status == 1) {
+				this->chunkQueue.push(chunk);
+				DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
+						   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
+
+				// NULL will create a new chunk on the next iteration
+				chunk = NULL;
+			}
+
+			// Status is 0, so the file was added. Get the next file.
+		} while(status != 0);
+	}
+
+	// Push the last chunk into the array.
+	this->chunkQueue.push(chunk);
+	DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
+			   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
+
+	LOG(INFO) << "Finished chunk creation.";
+}
+
+/**
+ * Adds the given file to the chunk.
+ *
+ * If 0 is returned, we're ready for the next file. If -1 is returned, an error
+ * occurred. If 1 is returned, call this function again with the same file, but a
+ * new chunk.
+ */
+int BackupJob::chunkAddFile(BackupFile *file, Chunk *chunk) {
+	Chunk::Add_File_Status status;
+
+	// Attempt to add this file to the chunk
+	status = chunk->addFile(file);
+
+	// DLOG(INFO) << "Added " << file->getPath() << ": " << status;
+
+	switch(status) {
+		/*
+		 * Only part of the chunk was able to be fit into this chunk. Mark this
+		 * chunk as done, generate a new one, and add the file again.
+		 */
+		case Chunk::Add_File_Status::Partial:
+			return 1;
+
+		/*
+		 * There is insufficient space remaining in this chunk to add this file
+		 * to the chunk. Mark the chunk as done, generate a new one, and retry.
+		 */
+		case Chunk::Add_File_Status::NoSpace:
+			return 1;
+
+		/*
+		 * An undefined error occurred while attempting to add the file. This is
+		 * most likely the result of some sort of I/O error or permissions mis-
+		 * match, and is considered fatal for the backup.
+		 */
+		case Chunk::Add_File_Status::Error:
+			return -1;
+
+		// The file was added successfully, so nothing more has to be done.
+		case Chunk::Add_File_Status::Success:
+			return 0;
+	}
 }

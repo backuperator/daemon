@@ -2,14 +2,12 @@
 
 #include <glog/logging.h>
 
-#include <iostream>
 #include <cstdio>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
 #include <boost/uuid/uuid_generators.hpp>
 
-using std::cerr;
 using boost::filesystem::path;
 
 /**
@@ -61,7 +59,7 @@ int BackupFile::fetchMetadata() {
 	err = stat(filepath, &info);
 
 	if(err != 0) {
-		cerr << "Couldn't get info on file " << filepath << ": " << errno << std::endl;
+		PLOG(ERROR) << "Couldn't get info on " << filepath;
 		return -1;
 	}
 
@@ -83,10 +81,9 @@ int BackupFile::fetchMetadata() {
 
 /**
  * Prepares the file for reading. This will allocate its metadata structure for
- * more accurate file size tracking, as well as mapping the entire file into
- * address space for memory-mapped access.
+ * more accurate file size tracking, and fetches all metadata.
  */
-void BackupFile::beginReading() {
+void BackupFile::prepareChunkMetadata() {
 	// Fetch file data
 	this->fetchMetadata();
 
@@ -95,6 +92,7 @@ void BackupFile::beginReading() {
 	size_t nameLength = strlen(this->path.c_str()) + 1; // +1 for NULL byte
 
 	size_t fullSize = (structSize + nameLength);
+	this->fileEntrySize = fullSize;
 
 	// Allocate the struct and write all the info we have into it
 	this->fileEntry = (chunk_file_entry_t *) malloc(fullSize);
@@ -112,16 +110,24 @@ void BackupFile::beginReading() {
 	this->fileEntry->mode = this->mode;
 
 	this->fileEntry->size = this->size;
+}
 
+/**
+ * Prepares the file for reading, by mapping the entire file into virtual memory in
+ * read-only mode.
+ */
+void BackupFile::beginReading() {
 	// open the file and map it into memory.
-	this->fd = fopen(this->path.c_str(), "rb");
-	PLOG_IF(FATAL, this->fd == NULL) << "Couldn't open file " << this->path
-									 << "for reading";
+	if(this->isDirectory == false) {
+		this->fd = fopen(this->path.c_str(), "rb");
+		PLOG_IF(FATAL, this->fd == NULL) << "Couldn't open file " << this->path
+										 << " for reading";
 
-	int fd = fileno(this->fd);
+		int fd = fileno(this->fd);
 
-	this->mappedFile = mmap(NULL, this->size, PROT_READ, MAP_PRIVATE, fd, 0);
-	PLOG_IF(FATAL, this->mappedFile == MAP_FAILED) << "Couldn't map file";
+		this->mappedFile = mmap(NULL, this->size, PROT_READ, MAP_PRIVATE, fd, 0);
+		PLOG_IF(FATAL, this->mappedFile == MAP_FAILED) << "Couldn't map file";
+	}
 }
 
 /**
