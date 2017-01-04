@@ -4,46 +4,53 @@
  * NOTE: The version of the chunk header defines what versions of the embedded
  * structures are used.
  */
-#ifndef CHUNK_H
-#define CHUNK_H
+#ifndef TAPESTRUCTS_H
+#define TAPESTRUCTS_H
 
 #include <cstdint>
+
+/**
+ * File types to back up
+ */
+ typedef enum {
+	 kTypeFile			= 0x0001,
+	 kTypeDirectory		= 0x1000,
+ } chunk_file_type_t;
 
 /**
  * File entry; specifies information about a single file in a chunk.
  */
 typedef struct __attribute__((packed)) {
 	// Unique identifier for this file
-	uint8_t[16] file_uuid;
+	uint8_t file_uuid[16];
+
+	// What type of file it is
+	chunk_file_type_t type;
 
 	// Timestamp for last modification date.
-	uint64_t time_modified;
+	uint64_t timeModified;
+	// Full size of the file
+	uint64_t size;
 
 	// Owner and group
 	uint32_t owner, group;
 	// File mode
 	uint32_t mode;
 
-	// CRC32 (using the Castagnoli polynomial) over the data
+	// CRC32 (using the Castagnoli polynomial) over the data in this blob
 	uint32_t checksum;
 
 	// Offset within the chunk to the file's data.
-	uint64_t blob_start;
+	uint64_t blobStartOff;
 	// Length of the blob, in bytes.
-	uint64_t num_blob_bytes;
+	uint64_t blobLenBytes;
 	// Byte offset in the original file where this blob goes.
-	uint64_t blob_file_start;
-
-	// How many parts this file has been split into; if it is not 1, the file is
-	// split across multiple chunks.
-	uint32_t num_file_parts;
-	// Index of the current part of the file.
-	uint32_t file_part;
+	uint64_t blobFileOffset;
 
 	// Length of the filename (in bytes)
-	uint32_t num_name_bytes;
+	uint32_t nameLenBytes;
 	// Filename (UTF-8 encoded)
-	char[] name;
+	char name[];
 } chunk_file_entry_t;
 
 /**
@@ -53,13 +60,13 @@ typedef struct  __attribute__((packed)) {
 	// Chunk header version; currently 0x00010000.
 	uint32_t version;
 	// Identifier of the backup job; can be cross-referenced with database.
-    uint8_t[16] backup_uuid;
+    uint8_t backup_uuid[16];
 	// Index of this chunk in the backup; first chunk is zero.
     uint64_t chunk_index;
 	// Size of this chunk, in bytes.
 	uint64_t chunk_length;
 	// Identifier of the tape that contains this chunk
-	char[8] tape_label;
+	char tape_label[8];
 
 	// Encryption data
 	struct {
@@ -67,16 +74,16 @@ typedef struct  __attribute__((packed)) {
 		uint8_t method;
 
 		// IV used to encrypt this block
-		uint8_t[32] iv;
+		uint8_t iv[32];
 	} encryption;
 
 	// Reserved for future expansion
-	uint8_t[0x4000] reserved;
+	uint8_t reserved[0x4000];
 
 	// Number of files contained in this chunk.
 	uint32_t num_file_entries;
 	// An array of file entries, containing num_file_entries entries.
-	chunk_file_entry_t[] entry;
+	chunk_file_entry_t entry[];
 } chunk_header_t;
 
 

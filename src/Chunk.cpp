@@ -2,10 +2,7 @@
 
 #include <glog/logging.h>
 
-#include <iostream>
 #include <sys/mman.h>
-
-using std::cerr;
 
 /**
  * When this is set, we attempt to use superpages to allocate the backing store,
@@ -26,15 +23,12 @@ static bool use_superpages = false;
 #endif
 
 /**
- * Creates a chunk of the given size.
+ * Creates a chunk, which may grow to be NO LARGER than the given size.
  */
 Chunk::Chunk(std::size_t size) {
 	// Store the size of the chunk
-	this->backing_store_size = size;
-	this->backing_store_bytes_allocated = this->header_area_size;
-
-	// Allocate backing store
-	this->allocateBackingStore();
+	this->backingStoreMaxSize = size;
+	this->backingStoreBytesUsed = this->header_area_size;
 }
 
 /**
@@ -43,30 +37,27 @@ Chunk::Chunk(std::size_t size) {
 void Chunk::allocateBackingStore() {
 	if(use_superpages == true) {
 		// Allocate the backing store with superpages
-		this->backing_store = mmap(NULL, this->backing_store_size,
+		this->backingStore = mmap(NULL, this->backingStoreActualSize,
 								   PROT_READ | PROT_WRITE,
 								   MAP_ALIGNED_SUPER | MAP_ANON, -1, 0);
 
 		// If this fails, attempt a regular allocation.
-		if(this->backing_store == MAP_FAILED) {
-			cerr << "Couldn't allocate backing store sized " << this->backing_store_size
-				 << " with superpages; errno = " << errno << std::endl;
+		if(this->backingStore == MAP_FAILED) {
+			PLOG(ERROR) << "Couldn't allocate backing store size "
+						<< this->backingStoreActualSize << " using superpages";
 
 			use_superpages = false;
 			this->allocateBackingStore();
 		}
 	} else {
 		// Attempt a regular allocation.
-		this->backing_store = mmap(NULL, this->backing_store_size,
+		this->backingStore = mmap(NULL, this->backingStoreActualSize,
 								   PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
 
 		// If this fails, we're fucked.
-		if(this->backing_store == MAP_FAILED) {
-			cerr << "Couldn't allocate backing store sized " << this->backing_store_size
-				 << " using normal pages; errno = " << errno << std::endl;
-
-			// we really cannot recover from this
-			abort();
+		if(this->backingStore == MAP_FAILED) {
+			PLOG(FATAL) << "Couldn't allocate backing store size "
+						<< this->backingStoreActualSize << " using normal pages";
 		}
 	}
 }
@@ -78,11 +69,19 @@ Chunk::~Chunk() {
 	int err = 0;
 
 	// Unmamp memory
-	err = munmap(this->backing_store, this->backing_store_size);
+	err = munmap(this->backingStore, this->backingStoreActualSize);
 
 	if(err != 0) {
-		cerr << "Couldn't unmap 0x" << std::hex << this->backing_store
-			 << std::dec << " (chunk backing store): errno = " << errno
-			 << std::endl;
+		PLOG(ERROR) << "Couldn't unmap 0x" << std::hex << this->backingStore
+					<< std::dec << " (chunk backing store)";
 	}
+}
+
+/**
+ * Adds a file. This will cause the file to be mapped into memory, metadata read
+ * and several buffers prepared.
+ */
+Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
+	// Prepare file
+	file->beginReading();
 }
