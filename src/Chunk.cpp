@@ -149,4 +149,8 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 	}
 
 	// The file needs to be split.
+
+	// TODO: Split file
+
+	return Add_File_Status::Partial;
 }
