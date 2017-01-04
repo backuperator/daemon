@@ -6,6 +6,12 @@
 #ifndef BACKUPJOB_H
 #define BACKUPJOB_H
 
+/**
+ * Defines how many threads should be allocated for iterating the directory to
+ * be backed up.
+ */
+#define DIR_ITERATOR_POOL_SZ		4
+
 #include <string>
 #include <ctime>
 #include <queue>
@@ -14,9 +20,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/thread.hpp>
+#include <CTPL/ctpl.h>
 
 #include "Chunk.hpp"
 #include "BackupFile.hpp"
+
 
 class BackupJob {
     public:
@@ -39,7 +47,7 @@ class BackupJob {
 		void scanDirectory(boost::filesystem::path path, BackupFile *);
 
     private:
-		boost::thread *directoryScanner;
+		ctpl::thread_pool *directoryScannerPool;
 
 		void directoryScannerEntry();
 };

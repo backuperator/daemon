@@ -19,6 +19,10 @@ BackupJob::BackupJob(std::string root) {
     // Generate an UUID for the job
 	boost::uuids::basic_random_generator<boost::mt19937> gen;
 	this->uuid = gen();
+
+	// Create the thread pool
+	this->directoryScannerPool = new ctpl::thread_pool(DIR_ITERATOR_POOL_SZ);
+	LOG(INFO) << "Using " << DIR_ITERATOR_POOL_SZ << " threads for directory iteration";
 }
 
 /**
@@ -50,8 +54,12 @@ void BackupJob::cancel() {
  * recursive manner.
  */
 void BackupJob::beginDirectoryScan() {
-	// Create the directory scanner thread
-	this->directoryScanner = new boost::thread(boost::bind(&BackupJob::directoryScannerEntry, this));
+	// Submit the initial job to the thread pool
+	this->directoryScannerPool->push(boost::bind(&BackupJob::directoryScannerEntry, this));
+
+	// Wait for the thread pool to complete
+	this->directoryScannerPool->stop(true);
+	LOG(INFO) << "Found " << this->backupFiles.size() << " files/directories";
 }
 
 /**
@@ -66,9 +74,6 @@ void BackupJob::directoryScannerEntry() {
 
 	// Begin scanning the root directory.
 	this->scanDirectory(this->rootPath, root);
-
-	// Done.
-	LOG(INFO) << "Found " << this->backupFiles.size() << " files/directories";
 }
 
 /**
@@ -87,7 +92,8 @@ void BackupJob::scanDirectory(path inPath, BackupFile *parent) {
 
             // Is what we found a directory?
 			if(is_directory(entry)) {
-				this->scanDirectory(path(entry), file);
+				// If so, submit a job to scan it to the thread pool
+				this->directoryScannerPool->push(boost::bind(&BackupJob::scanDirectory, this, path(entry), file));
 			}
 		}
     }
