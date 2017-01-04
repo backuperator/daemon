@@ -268,6 +268,7 @@ void Chunk::finalize() {
 	header->version = 0x00010000;
 	header->numFileEntries = this->files.size();
 	header->chunkLenBytes = this->backingStoreActualSize;
+	header->encryption.method = CHUNK_ENCRYPTION_NONE;
 
 
 	// Copy all the file headers, as well as file data itself
@@ -321,6 +322,15 @@ void Chunk::finalize() {
 			file->finishedReading();
 		}
 	}
+}
+
+/**
+ * Writes the backup job UUID into the header.
+ */
+void Chunk::setJobUuid(boost::uuids::uuid uuid) {
+	chunk_header_t *header = (chunk_header_t *) this->backingStore;
+
+	std::copy(uuid.begin(), uuid.end(), header->jobUuid);
 }
 
 /**

@@ -18,22 +18,25 @@
 #include <atomic>
 
 #include <CTPL/ctpl.h>
+#include <boost/uuid/uuid.hpp>
 
 #include "Chunk.hpp"
 #include "TapeWriter.hpp"
 
 class ChunkPostprocessor {
 	public:
-		ChunkPostprocessor(std::mutex *, std::queue<Chunk *>*);
+		ChunkPostprocessor(boost::uuids::uuid);
 		~ChunkPostprocessor();
 
-		void newChunkAvailable();
+		void newChunkAvailable(Chunk *);
 
 	private:
+		boost::uuids::uuid backupJobUuid;
+
 		ctpl::thread_pool *threadPool;
 
-		std::mutex *queueMutex;
-		std::queue<Chunk *> *queue;
+		std::mutex queueMutex;
+		std::queue<Chunk *> queue;
 
 		std::condition_variable chunkSignal;
 		bool shouldRun = true;

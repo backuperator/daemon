@@ -31,6 +31,7 @@ class TapeWriter {
 
 		std::thread workerThread;
 
+		std::condition_variable chunkProcessedSignal;
 		std::condition_variable newChunksAvailableSignal;
 		bool shouldRun = true;
 

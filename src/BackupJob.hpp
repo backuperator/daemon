@@ -49,9 +49,6 @@ class BackupJob {
 
         std::vector<BackupFile> backupFiles;
 
-		std::mutex chunkQueueMutex;
-        std::queue<Chunk *> chunkQueue;
-
 		ctpl::thread_pool *threadPool;
 		ChunkPostprocessor *postProcessor;
 

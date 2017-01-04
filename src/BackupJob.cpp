@@ -24,9 +24,8 @@ BackupJob::BackupJob(std::string root) {
 	this->threadPool = new ctpl::thread_pool(DIR_ITERATOR_POOL_SZ);
 	LOG(INFO) << "Using " << DIR_ITERATOR_POOL_SZ << " threads for directory iteration";
 
-	// Create chunk postprocessor
-	this->postProcessor = new ChunkPostprocessor(&this->chunkQueueMutex,
-												 &this->chunkQueue);
+	// Create and configure chunk postprocessor
+	this->postProcessor = new ChunkPostprocessor(this->uuid);
 }
 
 /**
@@ -59,12 +58,6 @@ void BackupJob::cancel() {
 
 	// Get rid of the post-processor
 	delete this->postProcessor;
-
-	// De-allocate any generated chunks
-	while(!this->chunkQueue.empty()) {
-		delete this->chunkQueue.front();
-		this->chunkQueue.pop();
-	}
 }
 
 
@@ -172,16 +165,12 @@ void BackupJob::_chunkFinished(Chunk *chunk) {
 	// finalize the chunk
 	chunk->finalize();
 
-	// push it into the queue, after acquiring the mutex
-	this->chunkQueueMutex.lock();
-	this->chunkQueue.push(chunk);
-	this->chunkQueueMutex.unlock();
-
+	// send it off to the post processor
 	DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
 			   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
 
 	// Notify chunk postprocessor
-	this->postProcessor->newChunkAvailable();
+	this->postProcessor->newChunkAvailable(chunk);
 }
 
 /**

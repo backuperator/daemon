@@ -7,11 +7,10 @@
  * Creates the chunk postprocessor, including the worker thread. The worker
  * thread will sleep until it is signaled that a new chunk is available.
  */
-ChunkPostprocessor::ChunkPostprocessor(std::mutex *mutex, std::queue<Chunk *> *queue) {
-	this->queueMutex = mutex;
-	this->queue = queue;
-
+ChunkPostprocessor::ChunkPostprocessor(boost::uuids::uuid uuid) {
 	this->lastChunkIndex = 0;
+
+	this->backupJobUuid = uuid;
 
 	// Create worker thread
 	this->threadPool = new ctpl::thread_pool(POSTPROCESSOR_THREAD_POOL_SIZE);
@@ -28,6 +27,16 @@ ChunkPostprocessor::ChunkPostprocessor(std::mutex *mutex, std::queue<Chunk *> *q
  * Cleans up the postprocessor.
  */
 ChunkPostprocessor::~ChunkPostprocessor() {
+	// Empty the chunk queue
+	this->queueMutex.lock();
+
+	while(!this->queue.empty()) {
+		delete this->queue.front();
+		this->queue.pop();
+	}
+
+	this->queueMutex.unlock();
+
 	// Stop the main worker thread
 	this->shouldRun = false;
 	this->chunkSignal.notify_all();
@@ -44,7 +53,12 @@ ChunkPostprocessor::~ChunkPostprocessor() {
  * Signals the condition variable that the worker thread is sleeping on, telling
  * it that a new chunk is available to process.
  */
-void ChunkPostprocessor::newChunkAvailable() {
+void ChunkPostprocessor::newChunkAvailable(Chunk *chunk) {
+	// Push chunk onto queue
+    std::lock_guard<std::mutex> lock(this->queueMutex);
+	this->queue.push(chunk);
+
+	// Notify worker thread
 	this->chunkSignal.notify_all();
 }
 
@@ -60,12 +74,12 @@ void ChunkPostprocessor::_workerEntry() {
 
 
 		// Fetch a chunk from the head of the queue
-		this->queueMutex->lock();
+		this->queueMutex.lock();
 
-		Chunk *chunk = this->queue->front();
-		this->queue->pop();
+		Chunk *chunk = this->queue.front();
+		this->queue.pop();
 
-		this->queueMutex->unlock();
+		this->queueMutex.unlock();
 
 
 		// Do shit to this chunk
@@ -82,6 +96,7 @@ void ChunkPostprocessor::_processChunk(Chunk *chunk) {
 
 	// Set the chunk index, write backup UUID, then encrypt if needed
 	chunk->setChunkNumber(this->lastChunkIndex++);
+	chunk->setJobUuid(this->backupJobUuid);
 
 	// Disallow any further writes to the chunk.
 	chunk->stopWriting();

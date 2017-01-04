@@ -30,10 +30,16 @@ TapeWriter::~TapeWriter() {
  */
 void TapeWriter::addChunkToQueue(Chunk *chunk) {
 	// Check the number of chunks in the queue; block if too many
-	while(this->writeQueue.size() >= MAX_CHUNKS_WAITING) {
-		// TODO: find a better thing to do instead of sleeping
-		std::this_thread::sleep_for(std::chrono::seconds(5));
-	}
+	// FIXME: this is horrendously defective
+	/*while(this->writeQueue.size() >= MAX_CHUNKS_WAITING) {
+		DLOG(INFO) << "More than " << MAX_CHUNKS_WAITING << " chunks waiting "
+				   << "to be written to tape; waiting";
+
+		// Wait on the "chunk processor completed" signal.
+		std::mutex m;
+		std::unique_lock<std::mutex> lk(m);
+		this->chunkProcessedSignal.wait(lk);
+	}*/
 
 	// Push the chunk onto the queue
     std::lock_guard<std::mutex> lock(this->writeQueueMutex);
@@ -63,6 +69,9 @@ void TapeWriter::_workerEntry() {
 
 		// …then write it.
 		_writeChunk(chunk);
+
+		// When we've finished this chunk, notify any waiting threads.
+		this->chunkProcessedSignal.notify_all();
 	}
 }
 
@@ -73,8 +82,20 @@ void TapeWriter::_workerEntry() {
  * other unrecoverable I/O error.
  */
 void TapeWriter::_writeChunk(Chunk *chunk) {
-	LOG(INFO) << "Writing chunk " << std::hex << chunk << " (idx "
-			  << chunk->getChunkNumber() << ") to tape";
+	LOG(INFO) << "Writing chunk " << chunk->getChunkNumber() << " to tape";
 
+	// For now, just write to a file.
+	std::ostringstream nameStr;
+	nameStr << chunk->getChunkNumber() << ".chunk";
+	std::string name  = nameStr.str();
+	const char *nameC = name.c_str();
+
+	FILE *fp = fopen(nameC, "w+b");
+	fwrite(chunk->backingStore, chunk->backingStoreActualSize, 1, fp);
+	fclose(fp);
+
+
+	// When done writing, delete the chunk.
+	LOG(INFO) << "Finished writing chunk " << chunk->getChunkNumber();
 	delete chunk;
 }

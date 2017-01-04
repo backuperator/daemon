@@ -12,6 +12,7 @@
 
 class Chunk {
 	friend class ChunkPostprocessor;
+	friend class TapeWriter;
 
 	public:
 		typedef enum {
@@ -52,6 +53,8 @@ class Chunk {
 		uint64_t getChunkNumber() {
 			return ((chunk_header_t *) this->backingStore)->chunkIndex;
 		}
+
+		void setJobUuid(boost::uuids::uuid);
 
 	protected:
 

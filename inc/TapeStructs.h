@@ -9,6 +9,10 @@
 
 #include <cstdint>
 
+#define CHUNK_ENCRYPTION_NONE	0x4E4F4E4520202020LL
+#define CHUNK_ENCRYPTION_AES128	0x4145532D31323820LL
+#define CHUNK_ENCRYPTION_AES256	0x4145532D32353620LL
+
 /**
  * File types to back up
  */
@@ -60,18 +64,16 @@ typedef struct  __attribute__((packed)) {
 	// Chunk header version; currently 0x00010000.
 	uint32_t version;
 	// Identifier of the backup job; can be cross-referenced with database.
-    uint8_t backupUuid[16];
+    uint8_t jobUuid[16];
 	// Index of this chunk in the backup; first chunk is zero.
     uint64_t chunkIndex;
 	// Size of this chunk, in bytes.
 	uint64_t chunkLenBytes;
-	// Identifier of the tape that contains this chunk
-	char tape_label[8];
 
 	// Encryption data
 	struct {
 		// Specifies the encryption methodl 0 if cleartext.
-		uint8_t method;
+		uint64_t method;
 
 		// IV used to encrypt this block
 		uint8_t iv[32];
