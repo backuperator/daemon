@@ -110,6 +110,8 @@ void BackupFile::prepareChunkMetadata() {
 	this->fileEntry->mode = this->mode;
 
 	this->fileEntry->size = this->size;
+
+	std::copy(this->uuid.begin(), this->uuid.end(), this->fileEntry->fileUuid);
 }
 
 /**
@@ -148,19 +150,16 @@ void BackupFile::finishedReading() {
  * Calculates how many data bytes the file has that still need to be read.
  */
 size_t BackupFile::bytesRemaining() {
-	return (this->size - this->lastByte);
+	return (this->size - this->rangeInChunk.fileOffset - this->rangeInChunk.length);
 }
 
 /**
- * Returns an offset inside of the memory-mapped region of the file, and then
- * advance the internal read pointer by `size` bytes.
+ * Copies `len` bytes from the memory mapped file region, starting at `offset` and
+ * ending up in the buffer `dest.`
  */
-void *BackupFile::getDataOfLength(size_t size) {
-	// get the current head of the read pointer
-	void * ptr = (void *) (((uint8_t *) this->mappedFile) + this->lastByte);
+void BackupFile::getDataOfLength(size_t len, off_t offset, void *dest) {
+	this->wasWrittenToChunk = true;
 
-	// increment read pointer
-	this->lastByte += size;
-
-	return ptr;
+	void *ptr = (void *) (((uint8_t *) this->mappedFile) + offset);
+	memcpy(dest, ptr, len);
 }

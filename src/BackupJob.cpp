@@ -73,6 +73,7 @@ void BackupJob::directoryScannerEntry() {
 	// Create a file entry for the root directory
 	BackupFile *root = new BackupFile(this->rootPath, NULL);
 	this->backupFiles.push_back(root);
+	this->backupFiles.reserve(10000);
 
 	// Begin scanning the root directory.
 	this->scanDirectory(this->rootPath, root);
@@ -130,6 +131,7 @@ void BackupJob::chunkCreatorEntry() {
 
 			// If this chunk is done, get rid of it.
 			if(status == 1) {
+				chunk->finalize();
 				this->chunkQueue.push(chunk);
 				DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
 						   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";
@@ -143,6 +145,7 @@ void BackupJob::chunkCreatorEntry() {
 	}
 
 	// Push the last chunk into the array.
+	chunk->finalize();
 	this->chunkQueue.push(chunk);
 	DLOG(INFO) << "Finished chunk: " << chunk->getUsedSpace()
 			   << " bytes used (out of " << CHUNK_MAX_SIZE << ")";

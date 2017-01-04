@@ -3,6 +3,9 @@
 #include <glog/logging.h>
 
 #include <sys/mman.h>
+#include <unistd.h>
+
+#include "crc32.h"
 
 /**
  * When this is set, we attempt to use superpages to allocate the backing store,
@@ -34,12 +37,13 @@ Chunk::Chunk(size_t size) {
 /**
  * Allocates the backing store.
  */
-void Chunk::allocateBackingStore() {
+void Chunk::_allocateBackingStore() {
 	if(use_superpages == true) {
 		// Allocate the backing store with superpages
 		this->backingStore = mmap(NULL, this->backingStoreActualSize,
 								   PROT_READ | PROT_WRITE,
-								   MAP_ALIGNED_SUPER | MAP_ANON, -1, 0);
+								   MAP_ALIGNED_SUPER | MAP_ANON | MAP_PRIVATE,
+								   -1, 0);
 
 		// If this fails, attempt a regular allocation.
 		if(this->backingStore == MAP_FAILED) {
@@ -47,12 +51,13 @@ void Chunk::allocateBackingStore() {
 						<< this->backingStoreActualSize << " using superpages";
 
 			use_superpages = false;
-			this->allocateBackingStore();
+			_allocateBackingStore();
 		}
 	} else {
 		// Attempt a regular allocation.
 		this->backingStore = mmap(NULL, this->backingStoreActualSize,
-								   PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
+								   PROT_READ | PROT_WRITE,
+								   MAP_ANON | MAP_PRIVATE, -1, 0);
 
 		// If this fails, we're fucked.
 		if(this->backingStore == MAP_FAILED) {
@@ -102,7 +107,7 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 	if(file->isDirectory) {
 		this->files.push_back(file);
 
-		// TODO: beginReading, if needed?
+		file->wasWrittenToChunk = file->fullyWrittenToChunk = true;
 		return Add_File_Status::Success;
 	}
 
@@ -137,6 +142,9 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 		// Read the file's metadata, and create the struct in memory
 		file->prepareChunkMetadata();
 
+		file->rangeInChunk.fileOffset = 0;
+		file->rangeInChunk.length = file->size;
+
 		// Add to storage
 		this->files.push_back(file);
 		this->backingStoreBytesUsed += file->size + file->fileEntrySize;
@@ -145,14 +153,31 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 		DLOG(INFO) << "\tUsed " << file->size << " bytes for file, "
 								<< file->fileEntrySize << " bytes for file record";*/
 
+		// mark the file as fully written
+		file->wasWrittenToChunk = file->fullyWrittenToChunk = true;
+		
 		return Add_File_Status::Success;
 	}
 
+
 	// The file needs to be split.
-
-	// TODO: Split file
-
+	_addFilePartial(file);
 	return Add_File_Status::Partial;
+}
+
+/**
+ * Attempt to fit a file, splitting it as needed.
+ */
+void Chunk::_addFilePartial(BackupFile *file) {
+	// If this file wasn't written yet, we start from offset 0.
+	if(file->wasWrittenToChunk == false) {
+		file->rangeInChunk.fileOffset = 0;
+
+		file->wasWrittenToChunk = true;
+		file->fullyWrittenToChunk = false;
+	}
+
+	LOG(FATAL) << "TODO: Split files if needed";
 }
 
 
@@ -160,14 +185,103 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
  * Actually creates the raw chunk data in memory for all files.
  */
 void Chunk::finalize() {
-	// Allocate backing store
-	this->allocateBackingStore();
+	const size_t pageSz = sysconf(_SC_PAGESIZE);
+
+	// Calculate how many bytes we need for headers.
+	size_t headerSz = sizeof(chunk_header_t);
+	size_t dataSz = 0;
+
+	for(auto it = this->files.begin(); it != this->files.end(); it++) {
+		headerSz += (*it)->fileEntrySize;
+
+		// Calculate how much space in the blob area the file needs
+		size_t blobSpaceUsed = (*it)->rangeInChunk.length;
+
+		if((blobSpaceUsed % pageSz) != 0) {
+			blobSpaceUsed += pageSz - (blobSpaceUsed % pageSz);
+		}
+
+		dataSz += blobSpaceUsed;
+	}
+
+	if((headerSz % pageSz) != 0) {
+		headerSz += pageSz - (headerSz % pageSz);
+	}
+	DLOG(INFO) << "Need " << headerSz << " bytes for chunk headers";
+
+	off_t dataOffset = headerSz;
+
+
+	// Calculate how much space we need to allocate in RAM
+	size_t bufferSize = headerSz + dataSz;
+
+	if((bufferSize % pageSz) != 0) {
+		bufferSize += pageSz - (bufferSize % pageSz);
+	}
+
+	this->backingStoreActualSize = bufferSize;
+	_allocateBackingStore();
+
+	DLOG(INFO) << "Allocated " << this->backingStoreActualSize << " bytes";
+
 
 	// Fill chunk header
 	chunk_header_t *header = (chunk_header_t *) this->backingStore;
 	memset(header, 0, sizeof(chunk_header_t));
 
 	header->version = 0x00010000;
-
 	header->num_file_entries = this->files.size();
+
+
+	// Copy all the file headers, as well as file data itself
+	uint8_t *fileEntries = (uint8_t *) &header->entry;
+	for(auto it = this->files.begin(); it != this->files.end(); it++) {
+		BackupFile *file = *it;
+		chunk_file_entry_t *entry = (chunk_file_entry_t *) fileEntries;
+
+		DLOG(INFO) << "Placing file " << file->path;
+
+		// Copy the entry into the header and increment the write ptr
+		memcpy(entry, file->fileEntry, file->fileEntrySize);
+		fileEntries += file->fileEntrySize;
+
+
+		// Perform additional steps if the file has data
+		if(file->isDirectory == false) {
+			file->beginReading();
+
+			// Determine the location of the file
+			file->rangeInChunk.blobOffsetInChunk = dataOffset;
+			dataOffset += file->rangeInChunk.length;
+
+			/*
+			 * Round up the location where the next file is placed to be a multiple
+			 * of the system's page size. This makes restoring the file easier,
+			 * since the chunk can be read to disk, and only the part of the file
+			 * we need will be mapped into memory.
+			 */
+			if((dataOffset % pageSz) != 0) {
+				dataOffset += pageSz - (dataOffset % pageSz);
+			}
+
+			// Populate the location of the blob
+			entry->blobFileOffset = file->rangeInChunk.fileOffset;
+			entry->blobLenBytes = file->rangeInChunk.length;
+			entry->blobStartOff = file->rangeInChunk.blobOffsetInChunk;
+
+			DLOG(INFO) << "\tWriting " << entry->blobLenBytes << " to "
+					   << entry->blobStartOff;
+
+
+			// Copy the data
+			void *dataDst = ((uint8_t *) this->backingStore) + entry->blobStartOff;
+			file->getDataOfLength(entry->blobLenBytes, entry->blobFileOffset, dataDst);
+
+			// Calculate CRC-32
+			entry->checksum = crc32c(0, dataDst, entry->blobLenBytes);
+
+			// We don't need the file's data anymore.
+			file->finishedReading();
+		}
+	}
 }

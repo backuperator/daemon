@@ -40,8 +40,13 @@ class BackupFile {
 		bool wasWrittenToChunk = false;
 		// once all bytes are written, this is set
 		bool fullyWrittenToChunk = false;
-		// this is the first byte returned by the next call to getDataOfLength
-		off_t lastByte = 0;
+
+		struct {
+			off_t fileOffset = 0;
+			size_t length = 0;
+
+			off_t blobOffsetInChunk = 0;
+		} rangeInChunk;
 
 		// file descriptor for the file
 		FILE *fd = NULL;
@@ -57,8 +62,8 @@ class BackupFile {
 
 		// how many bytes of the file are left to read
 		size_t bytesRemaining();
-		// pointer to a buffer containing size bytes; lastByte is advanced.
-		void *getDataOfLength(size_t);
+		// reads len bytes at off to the buffer given
+		void getDataOfLength(size_t, off_t, void *);
 
 	private:
 		boost::uuids::uuid uuid;

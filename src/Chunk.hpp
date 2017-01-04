@@ -60,8 +60,11 @@ class Chunk {
 
 		std::vector<BackupFile *> files;
 
+
+		void _addFilePartial(BackupFile *file);
+
 		// allocates backing store
-		void allocateBackingStore();
+		void _allocateBackingStore();
 };
 
 #endif

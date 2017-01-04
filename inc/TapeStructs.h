@@ -22,7 +22,7 @@
  */
 typedef struct __attribute__((packed)) {
 	// Unique identifier for this file
-	uint8_t file_uuid[16];
+	uint8_t fileUuid[16];
 
 	// What type of file it is
 	chunk_file_type_t type;
@@ -60,7 +60,7 @@ typedef struct  __attribute__((packed)) {
 	// Chunk header version; currently 0x00010000.
 	uint32_t version;
 	// Identifier of the backup job; can be cross-referenced with database.
-    uint8_t backup_uuid[16];
+    uint8_t backupUuid[16];
 	// Index of this chunk in the backup; first chunk is zero.
     uint64_t chunk_index;
 	// Size of this chunk, in bytes.
