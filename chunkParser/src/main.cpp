@@ -42,7 +42,15 @@ int main(int argc, char *argv[]) {
 		// Create a parser and list all embedded files
 		parser = new ChunkFileParser(boost::filesystem::path(path));
 
-		parser->listFiles();
+		// List if we're not extracting any files.
+		if(vm.count("extract") == 0) {
+			parser->listFiles();
+		} else {
+			int fileIdx = vm["extract"].as<int>();
+			LOG(INFO) << "Attempting to extract file " << fileIdx;
+
+			parser->extractAtIndex(fileIdx);
+		}
 	} else {
 		LOG(FATAL) << "No input files were specified.";
 	}

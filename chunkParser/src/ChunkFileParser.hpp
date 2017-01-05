@@ -9,12 +9,16 @@
 
 #include <cstdio>
 
+#include "TapeStructs.h"
+
 class ChunkFileParser {
 	public:
 		ChunkFileParser(boost::filesystem::path);
 		~ChunkFileParser();
 
 		void listFiles();
+
+		void extractAtIndex(off_t);
 
 	private:
 		FILE *fd;
@@ -24,6 +28,7 @@ class ChunkFileParser {
 
 		void _parseHeader();
 
+		void _printFileInfo(size_t, chunk_file_entry_t *);
 		const char *_nameForUid(int);
 		const char *_nameForGid(int);
 };

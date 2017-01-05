@@ -2,12 +2,13 @@
 
 #include <glog/logging.h>
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <pwd.h>
 #include <grp.h>
 
-#include "TapeStructs.h"
+#include "crc32.h"
 
 /**
  * Initializes the chunk file parser, opening the chunk file at the specified
@@ -63,6 +64,69 @@ void ChunkFileParser::_parseHeader() {
 	}
 }
 
+
+/**
+ * Extracts the file at the given index. Note that all but the file's actual
+ * name are disregarded; the directory in which it originally existed is not
+ * taken into account.
+ */
+void ChunkFileParser::extractAtIndex(off_t index) {
+	off_t i = 0;
+
+	// Locate this file's entry.
+	chunk_header_t *header = (chunk_header_t *) this->mappedFile;
+	uint8_t *fileEntryStart = (uint8_t *) &header->entry;
+
+	for(i = 0; i < index; i++) {
+		// Print info about it
+		chunk_file_entry_t *fileEntry = (chunk_file_entry_t *) fileEntryStart;
+		fileEntryStart += sizeof(chunk_file_entry_t) + fileEntry->nameLenBytes;
+	}
+
+	// Print file info
+	chunk_file_entry_t *fileEntry = (chunk_file_entry_t *) fileEntryStart;
+	_printFileInfo(i, fileEntry);
+
+	if(fileEntry->blobLenBytes != fileEntry->size) {
+		LOG(WARNING) << "NOTE: The file's entire data is not contained in this "
+					 << "chunk. To get the entire file, re-run this utility "
+					 << "with any subsequent chunks.";
+	}
+
+	// Seek to its data and calculate the CRC
+	void *dataOffset = ((uint8_t *) this->mappedFile) + fileEntry->blobStartOff;
+
+ 	uint32_t crc = crc32c(0, dataOffset, fileEntry->blobLenBytes);
+
+	if(crc != fileEntry->checksum) {
+		LOG(ERROR) << "CRC MISMATCH DETECTED; THIS FILE MAY HAVE BEEN CORRUPTED!";
+		LOG(ERROR) << "Calculated " << std::hex << crc << ", expected "
+				   << fileEntry->checksum << std::dec
+				   << "; proceeding with extraction anyways.";
+	}
+
+	// Gather the pathname
+	boost::filesystem::path path(fileEntry->name);
+	const char *name = path.filename().c_str();
+
+	LOG(INFO) << "Attempting to open file for writing at " << name;
+
+	// Open output file and seek to the correct position
+	int outFp = open(name, O_RDWR | O_CREAT | O_EXLOCK);
+	PCHECK(outFp != -1) << "Could not open file for writing";
+
+	fchmod(outFp, fileEntry->mode);
+	lseek(outFp, fileEntry->blobFileOffset, SEEK_SET);
+
+	// Write to it, then close the file
+	write(outFp, dataOffset, fileEntry->blobLenBytes);
+	close(outFp);
+
+	// Done!
+	LOG(INFO) << "Wrote " << fileEntry->blobLenBytes << " bytes.";
+}
+
+
 /**
  * Lists all files found in this chunk.
  */
@@ -71,25 +135,32 @@ void ChunkFileParser::listFiles() {
 
 	uint8_t *fileEntryStart = (uint8_t *) &header->entry;
 
-	for(size_t i = 0; i < header->numFileEntries; i++) {
+	for(off_t i = 0; i < header->numFileEntries; i++) {
 		// Print info about it
 		chunk_file_entry_t *fileEntry = (chunk_file_entry_t *) fileEntryStart;
-
-		LOG(INFO) << "File " << i;
-		LOG(INFO) << "\tName: " << fileEntry->name;
-		LOG(INFO) << "\tMode: " << std::oct << fileEntry->mode << std::dec
-				  << "; owner " << _nameForUid(fileEntry->owner) << "("
-				  << fileEntry->owner << ")"
-				  << " group " << _nameForGid(fileEntry->group) << "("
-				  << fileEntry->group << ")";
-		LOG(INFO) << "\tSize: " << fileEntry->size << " (chunk offset = "
-				  << fileEntry->blobStartOff << ", length = "
-				  << fileEntry->blobLenBytes << ", original file offset = "
-				  << fileEntry->blobFileOffset << ")";
+		_printFileInfo(i, fileEntry);
 
 		// Increment by the size
 		fileEntryStart += sizeof(chunk_file_entry_t) + fileEntry->nameLenBytes;
 	}
+}
+
+
+/**
+ * Prints info about a file, given its file entry structure.
+ */
+void ChunkFileParser::_printFileInfo(size_t i, chunk_file_entry_t *fileEntry) {
+	LOG(INFO) << "File " << i;
+	LOG(INFO) << "\tName: " << fileEntry->name;
+	LOG(INFO) << "\tMode: " << std::oct << fileEntry->mode << std::dec
+			  << "; owner " << _nameForUid(fileEntry->owner) << "("
+			  << fileEntry->owner << ")"
+			  << " group " << _nameForGid(fileEntry->group) << "("
+			  << fileEntry->group << ")";
+	LOG(INFO) << "\tSize: " << fileEntry->size << " (chunk offset = "
+			  << fileEntry->blobStartOff << ", length = "
+			  << fileEntry->blobLenBytes << ", original file offset = "
+			  << fileEntry->blobFileOffset << ")";
 }
 
 /**

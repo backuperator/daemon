@@ -1,7 +1,7 @@
 TARGET_EXEC ?= chunk-parser
 
 BUILD_DIR ?= ./build
-SRC_DIRS ?= ./src
+SRC_DIRS ?= ./src ../helper
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s) ../src/Logging.cpp
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
