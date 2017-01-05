@@ -99,15 +99,22 @@ void BackupJob::_scanDirectory(path inPath, BackupFile *parent) {
 			// DLOG(INFO) << "Found " << entry;
 			DLOG_EVERY_N(INFO, 100) << "Found " << this->backupFiles.size() << " items so far";
 
-			// create a backup file for this entry
-			BackupFile file = BackupFile(path(entry), parent);
-			this->backupFiles.push_back(file);
+			/*
+			 * Ignore files, if they are device files, or if they are the dot (".") or
+			 * double dot ("..") files
+			 */
+			path newPath(entry);
 
-            // Is what we found a directory?
-			if(is_directory(entry)) {
-				// If so, submit a job to scan it to the thread pool
-				this->threadPool->push(boost::bind(&BackupJob::_scanDirectory, this,
-												   path(entry), &file));
+			if(!newPath.filename_is_dot() && !newPath.filename_is_dot_dot()) {
+				BackupFile file = BackupFile(newPath, parent);
+				this->backupFiles.push_back(file);
+
+	            // Is what we found a directory?
+				if(is_directory(entry)) {
+					// If so, submit a job to scan it to the thread pool
+					this->threadPool->push(boost::bind(&BackupJob::_scanDirectory, this,
+													   newPath, &file));
+				}
 			}
 		}
     }

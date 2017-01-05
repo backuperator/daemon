@@ -171,6 +171,8 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 Chunk::Add_File_Status Chunk::_addFilePartial(BackupFile *file) {
 	const size_t pageSz = sysconf(_SC_PAGESIZE);
 
+	DLOG(INFO) << "Splitting file " << file->path;
+
 	// If this file wasn't written yet, we start from offset 0.
 	if(file->wasWrittenToChunk == false) {
 		file->rangeInChunk.fileOffset = 0;
@@ -191,8 +193,12 @@ Chunk::Add_File_Status Chunk::_addFilePartial(BackupFile *file) {
 		file->rangeInChunk.length = 0;
 
 		file->rangeInChunk.length = file->bytesRemaining();
+		this->backingStoreBytesUsed += file->rangeInChunk.length + file->fileEntrySize;
 
 		file->fullyWrittenToChunk = true;
+
+		DLOG(INFO) << "\tOffset " << file->rangeInChunk.fileOffset
+				   << ", length " << file->rangeInChunk.length;
 
 		// Store it
 		this->files.push_back(file);
@@ -213,7 +219,13 @@ Chunk::Add_File_Status Chunk::_addFilePartial(BackupFile *file) {
 	file->rangeInChunk.fileOffset += file->rangeInChunk.length;
 	file->rangeInChunk.length = bytesInThisChunk;
 
+	this->backingStoreBytesUsed += file->rangeInChunk.length + file->fileEntrySize;
+
+	DLOG(INFO) << "\tOffset " << file->rangeInChunk.fileOffset
+			   << ", length " << file->rangeInChunk.length;
+
 	// This file can be partially added.
+	this->files.push_back(file);
 	return Add_File_Status::Partial;
 }
 
@@ -224,7 +236,7 @@ Chunk::Add_File_Status Chunk::_addFilePartial(BackupFile *file) {
 void Chunk::finalize() {
 	const size_t pageSz = sysconf(_SC_PAGESIZE);
 
-	// Calculate how many bytes we need for headers.
+	// Calculate how many bytes we need for headers and data
 	size_t headerSz = sizeof(chunk_header_t);
 	size_t dataSz = 0;
 
