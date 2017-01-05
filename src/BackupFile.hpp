@@ -41,6 +41,9 @@ class BackupFile {
 		// once all bytes are written, this is set
 		bool fullyWrittenToChunk = false;
 
+		// Set when the metadata has been read.
+		bool hasBeenPrepared = false;
+
 		struct {
 			off_t fileOffset = 0;
 			size_t length = 0;

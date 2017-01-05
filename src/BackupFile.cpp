@@ -29,6 +29,9 @@ BackupFile::BackupFile(boost::filesystem::path path, BackupFile *parent) {
 BackupFile::~BackupFile() {
 	// finish reading, if needed
 	this->finishedReading();
+
+	// De-allocate some buffers
+	free(this->fileEntry);
 }
 
 /**
@@ -84,8 +87,14 @@ int BackupFile::fetchMetadata() {
  * more accurate file size tracking, and fetches all metadata.
  */
 void BackupFile::prepareChunkMetadata() {
+	// Return if the chunk has already been prepared.
+	if(this->hasBeenPrepared == true) {
+		return;
+	}
+	this->hasBeenPrepared = true;
+
 	// Fetch file data
-	this->fetchMetadata();
+	CHECK(fetchMetadata() == 0) << "Could not read file metadata";
 
 	// Calculate the size of the metadata header
 	size_t structSize = sizeof(chunk_file_entry_t);
@@ -95,7 +104,7 @@ void BackupFile::prepareChunkMetadata() {
 	this->fileEntrySize = fullSize;
 
 	// Allocate the struct and write all the info we have into it
-	this->fileEntry = (chunk_file_entry_t *) malloc(fullSize);
+	this->fileEntry = (chunk_file_entry_t *) malloc(fullSize + 16);
 	memset(this->fileEntry, 0, fullSize);
 
 	this->fileEntry->nameLenBytes = nameLength;

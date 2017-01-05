@@ -95,10 +95,11 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 	}
 
 	// Prepare file
-	CHECK(file->fetchMetadata() == 0) << "Could not read file metadata";
-
 	size_t bytesFree = this->backingStoreMaxSize - this->backingStoreBytesUsed
 												 - kHeaderAreaReservedSpace;
+
+	// Read metadata and prepare internal structures, if needed
+	file->prepareChunkMetadata();
 
 	/*
 	 * If the file we've been handed is a directory, add it to the chunk without any
@@ -140,9 +141,6 @@ Chunk::Add_File_Status Chunk::addFile(BackupFile *file) {
 
 	// Check if we have enough space for the entire file in the chunk.
 	if(file->size < bytesFree) {
-		// Read the file's metadata, and create the struct in memory
-		file->prepareChunkMetadata();
-
 		file->rangeInChunk.fileOffset = 0;
 		file->rangeInChunk.length = file->size;
 
@@ -290,7 +288,9 @@ void Chunk::finalize() {
 		BackupFile *file = *it;
 		chunk_file_entry_t *entry = (chunk_file_entry_t *) fileEntries;
 
-		// DLOG(INFO) << "Placing file " << file->path;
+		std::string name(((char *) &file->fileEntry->name),
+						 file->fileEntry->nameLenBytes);
+		// LOG(INFO) << "Placing file " << name;
 
 		// Copy the entry into the header and increment the write ptr
 		memcpy(entry, file->fileEntry, file->fileEntrySize);

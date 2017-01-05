@@ -150,7 +150,8 @@ void ChunkFileParser::listFiles() {
  * Prints info about a file, given its file entry structure.
  */
 void ChunkFileParser::_printFileInfo(size_t i, chunk_file_entry_t *fileEntry) {
-	LOG(INFO) << "File " << i;
+	LOG(INFO) << "File " << i << " \t"
+			  << ((fileEntry->type == kTypeDirectory) ? "DIR" : "FILE");
 	LOG(INFO) << "\tName: " << fileEntry->name;
 	LOG(INFO) << "\tMode: " << std::oct << fileEntry->mode << std::dec
 			  << "; owner " << _nameForUid(fileEntry->owner) << "("
@@ -161,6 +162,9 @@ void ChunkFileParser::_printFileInfo(size_t i, chunk_file_entry_t *fileEntry) {
 			  << fileEntry->blobStartOff << ", length = "
 			  << fileEntry->blobLenBytes << ", original file offset = "
 			  << fileEntry->blobFileOffset << ")";
+	LOG(INFO) << "\tFlags: "
+			  << ((fileEntry->size != fileEntry->blobLenBytes) ? "PART" : "")
+			  << "\tChecksum: 0x" << std::hex << fileEntry->checksum << std::dec;
 }
 
 /**
