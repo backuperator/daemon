@@ -127,7 +127,7 @@ void BackupFile::beginReading() {
 
 		int fd = fileno(this->fd);
 
-		this->mappedFile = mmap(NULL, this->size, PROT_READ, MAP_PRIVATE, fd, 0);
+		this->mappedFile = mmap(NULL, this->size, PROT_READ, MAP_SHARED, fd, 0);
 		PLOG_IF(FATAL, this->mappedFile == MAP_FAILED) << "Couldn't map file";
 	}
 }

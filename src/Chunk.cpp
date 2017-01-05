@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "TapeStructs.h"
 #include "crc32.h"
 
 /**

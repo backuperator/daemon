@@ -30,8 +30,7 @@ TapeWriter::~TapeWriter() {
  */
 void TapeWriter::addChunkToQueue(Chunk *chunk) {
 	// Check the number of chunks in the queue; block if too many
-	// FIXME: this is horrendously defective
-	/*while(this->writeQueue.size() >= MAX_CHUNKS_WAITING) {
+	while(this->writeQueue.size() >= MAX_CHUNKS_WAITING) {
 		DLOG(INFO) << "More than " << MAX_CHUNKS_WAITING << " chunks waiting "
 				   << "to be written to tape; waiting";
 
@@ -39,11 +38,12 @@ void TapeWriter::addChunkToQueue(Chunk *chunk) {
 		std::mutex m;
 		std::unique_lock<std::mutex> lk(m);
 		this->chunkProcessedSignal.wait(lk);
-	}*/
+	}
 
 	// Push the chunk onto the queue
-    std::lock_guard<std::mutex> lock(this->writeQueueMutex);
+	this->writeQueueMutex.lock();
 	this->writeQueue.push(chunk);
+	this->writeQueueMutex.unlock();
 
 	// notify the worker thread
 	this->newChunksAvailableSignal.notify_all();
@@ -54,21 +54,33 @@ void TapeWriter::addChunkToQueue(Chunk *chunk) {
  */
 void TapeWriter::_workerEntry() {
 	while(this->shouldRun) {
-		// Wait for the thread to be woken
-		std::mutex m;
-	    std::unique_lock<std::mutex> lk(m);
-		this->newChunksAvailableSignal.wait(lk);
+		/*
+		 * Only wait for a "new chunk available" signal if the queue does not
+		 * have any chunks in it right now. Otherwise, this thread will wait for
+		 * such a signal with chunks still left to be written.
+		 */
+		if(this->writeQueue.empty()) {
+			std::mutex m;
+		    std::unique_lock<std::mutex> lk(m);
+			// this->newChunksAvailableSignal.wait_for(lk, std::chrono::seconds(60));
+			this->newChunksAvailableSignal.wait(lk);
 
-		// Get the chunk out of the queue…
-		this->writeQueueMutex.lock();
+			DLOG(INFO) << this->writeQueue.size() << " chunk(s) waiting";
+		}
 
-		Chunk *chunk = this->writeQueue.front();
-		this->writeQueue.pop();
+		// If there are things in the queue, process them.
+		if(!this->writeQueue.empty()) {
+			// Get the chunk out of the queue…
+			this->writeQueueMutex.lock();
 
-		this->writeQueueMutex.unlock();
+			Chunk *chunk = this->writeQueue.front();
+			this->writeQueue.pop();
 
-		// …then write it.
-		_writeChunk(chunk);
+			this->writeQueueMutex.unlock();
+
+			// …then write it.
+			_writeChunk(chunk);
+		}
 
 		// When we've finished this chunk, notify any waiting threads.
 		this->chunkProcessedSignal.notify_all();

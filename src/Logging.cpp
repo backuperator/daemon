@@ -1,7 +1,5 @@
 #include "Logging.hpp"
 
-#include <glog/logging.h>
-
 /**
  * Sets up the logger
  */
