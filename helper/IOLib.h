@@ -34,6 +34,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 #define IOLIB_EXTERN extern
 
@@ -74,7 +75,8 @@ typedef int iolib_error_t;
 
 /**
  * IOLib strings; these are really just char * pointers, but have a special type
- * to indicate that they belong to the IOLib, and must be freed using it.
+ * to indicate that they belong to the IOLib, and must be freed when the caller
+ * is done using them.
  */
 typedef char* iolib_string_t;
 
@@ -173,6 +175,25 @@ typedef enum {
 	kStorageElementAny = (kStorageElementTransport | kStorageElemenetSlot |
 						  kStorageElementPortal | kStorageElementDrive)
 } iolib_storage_element_type_t;
+
+/**
+ * Various flags that describe a storage element.
+ */
+typedef enum {
+	/// The element contains a tape.
+	kStorageElementFull = (1 << 1),
+	/// The medium was inserted by the operator (i.e. mailslot)
+	kStorageElementPlacedByOperator = (1 << 2),
+	/// The barcode on the medium could not be read.
+	kStorageElementInvalidLabel = (1 << 3),
+	/// Medium can be accessed by the picker
+	kStorageElementAccessible = (1 << 4),
+
+	/// Element supports medium exporting
+	kStorageElementSupportsExport = (1 << 8),
+	/// Element supports importing
+	kStorageElementSupportsImport = (1 << 9)
+} iolib_storage_element_flags_t;
 
 /**
  * A library is the device that the IOLib will enumerate. It doesn't correspond
@@ -311,6 +332,16 @@ IOLIB_EXTERN _iolib_drive_rewind_t iolibDriveRewind;
 typedef iolib_error_t (*_iolib_drive_eject_t)(iolib_drive_t);
 IOLIB_EXTERN _iolib_drive_eject_t iolibDriveEject;
 
+/**
+ * Locks the medium in the drive. This is useful during I/O operations that
+ * should not be interrupted due to an eject command from an operator control
+ * panel on a tape library, or to prevent inadvertent ejection of the tape.
+ *
+ * To lock the medium, pass true for the second argument; false unlocks it.
+ */
+typedef iolib_error_t (*_iolib_drive_lock_medium_t)(iolib_drive_t, bool);
+IOLIB_EXTERN _iolib_drive_lock_medium_t iolibDriveLockMedium;
+
 
 /**
  * Performs a write operation on the tape, starting at the drive's current
@@ -358,6 +389,13 @@ IOLIB_EXTERN _iolib_drive_write_filemark_t iolibDriveWriteFileMark;
  */
 typedef size_t (*_iolib_drive_read_t)(iolib_drive_t, void *, size_t, iolib_error_t *);
 IOLIB_EXTERN _iolib_drive_read_t iolibDriveRead;
+
+/**
+ * Checks whether the drive has encountered the end of the medium (EOM) yet.
+ */
+typedef bool (*_iolib_drive_is_at_end_t)(iolib_drive_t, iolib_error_t *);
+IOLIB_EXTERN _iolib_drive_is_at_end_t iolibDriveIsEOM;
+
 
 /////////////////////////////// Loader Handling ////////////////////////////////
 /**
@@ -411,9 +449,29 @@ typedef iolib_error_t (*_iolib_loader_get_elements_t)(iolib_loader_t, iolib_stor
 IOLIB_EXTERN _iolib_loader_get_elements_t iolibLoaderGetElements;
 
 /////////////////////////// Storage Element Handling ///////////////////////////
+/**
+ * Returns the logical address of the storage element. This is specific to the
+ * loader in use, and how it correlates to a physical slot is undefined.
+ */
+typedef off_t (*_iolib_element_get_address_t)(iolib_storage_element_t, iolib_error_t *);
+IOLIB_EXTERN _iolib_element_get_address_t iolibElementGetAddress;
 
+/**
+ * Get some flags that describe this storage element. This can be used to
+ * determine what this element supports, whether it has media in it, and so
+ * forth.
+ *
+ * NOTE: Flags are logically ORed together.
+ */
+typedef iolib_storage_element_flags_t (*_iolib_element_get_flags_t)(iolib_storage_element_t, iolib_error_t *);
+IOLIB_EXTERN _iolib_element_get_flags_t iolibElementGetFlags;
 
-//////////////////////////////// Tape Handling /////////////////////////////////
+/**
+ * Return the volume label of the specified element, if applicable. If no label
+ * is available on the given medium (or the element is empty), NULL is returned.
+ */
+typedef iolib_string_t (*_iolib_element_get_label_t)(iolib_storage_element_t);
+IOLIB_EXTERN _iolib_element_get_label_t iolibElementGetLabel;
 
 
 /////////////////////////////// Session Handling ///////////////////////////////
