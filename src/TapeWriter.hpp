@@ -18,6 +18,8 @@
 
 #include "Chunk.hpp"
 
+#include "IOLib.h"
+
 class TapeWriter {
 	public:
 		TapeWriter();

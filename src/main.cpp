@@ -1,11 +1,13 @@
 #include "DaemonListener.hpp"
 #include "Logging.hpp"
+#include "IOLib.h"
 
 /**
  * Daemon entry point
  */
 int main(int argc, char *argv[]) {
 	Logging::setUp(argv);
+    iolibLoadLib();
 
     // Set up the listener
     DaemonListener listener;

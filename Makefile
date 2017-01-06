@@ -1,7 +1,7 @@
 TARGET_EXEC ?= backuperator-daemon
 
 BUILD_DIR ?= ./build
-SRC_DIRS ?= ./helper ./src
+SRC_DIRS ?= helper src
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
