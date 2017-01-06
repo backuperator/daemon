@@ -157,6 +157,24 @@ typedef void* iolib_loader_t;
 typedef void* iolib_storage_element_t;
 
 /**
+ * Types of storage elements that a loader may have.
+ */
+typedef enum {
+	// Medium transport element (picker)
+	kStorageElementTransport = (1 << 1),
+	// Storage element (slot)
+	kStorageElemenetSlot = (1 << 2),
+	// Import/export element (portal) - mailslots fall in this category
+	kStorageElementPortal = (1 << 3),
+	// Data transfer element (drive)
+	kStorageElementDrive = (1 << 4),
+
+	// Any type of storage element
+	kStorageElementAny = (kStorageElementTransport | kStorageElemenetSlot |
+						  kStorageElementPortal | kStorageElementDrive)
+} iolib_storage_element_type_t;
+
+/**
  * A library is the device that the IOLib will enumerate. It doesn't correspond
  * exactly to physical devices, but instead serves as a convenient 'wrapper'
  * around physical devices.
@@ -342,7 +360,55 @@ typedef size_t (*_iolib_drive_read_t)(iolib_drive_t, void *, size_t, iolib_error
 IOLIB_EXTERN _iolib_drive_read_t iolibDriveRead;
 
 /////////////////////////////// Loader Handling ////////////////////////////////
+/**
+ * Returns a string that describes this loaders's capabilities. This is just
+ * intended for display to the user more than anything.
+ */
+typedef iolib_string_t (*_iolib_loader_get_name_t)(iolib_loader_t);
+IOLIB_EXTERN _iolib_loader_get_name_t iolibLoaderGetName;
 
+/**
+ * Returns the number of storage elements of the given type that a certain
+ * loader has.
+ */
+typedef size_t (*_iolib_loader_get_num_elements)(iolib_loader_t, iolib_storage_element_type_t, int *);
+IOLIB_EXTERN _iolib_loader_get_num_elements iolibLoaderGetNumElements;
+
+/**
+ * Force the specified loader to perform an inventory of all tapes. This will
+ * update the loader's internal status information. If the loader has the
+ * capability to read tape labels (i.e. via a barcode label) that will be done.
+ */
+typedef iolib_error_t (*_iolib_loader_do_inventory_t)(iolib_loader_t);
+IOLIB_EXTERN _iolib_loader_do_inventory_t iolibLoaderPerformInventory;
+
+/**
+ * Moves the tape in the first storage element to that in the second. This call
+ * will block while the move is taking place.
+ */
+typedef iolib_error_t (*_iolib_loader_move_t)(iolib_loader_t, iolib_storage_element_t, iolib_storage_element_t);
+IOLIB_EXTERN _iolib_loader_move_t iolibLoaderMove;
+
+/**
+ * Exchanges the media in the first storage element with that in the second.
+ * This call will block while the move is taking place.
+ *
+ * NOTE: This may not be supported on many loaders.
+ */
+typedef iolib_error_t (*_iolib_loader_exchange_t)(iolib_loader_t, iolib_storage_element_t, iolib_storage_element_t);
+IOLIB_EXTERN _iolib_loader_exchange_t iolibLoaderExchange;
+
+/**
+ * Populates an array of storage element structure types with information about
+ * n number of storage elements of a given type in the loader. The array
+ * specified must be able to hold at least n elements.
+ *
+ * NOTE: Storage element objects are shared objects, i.e. every invocation will
+ * return the same objects. Do not attempt to access/free these elements, as
+ * this may cause undefined behavior.
+ */
+typedef iolib_error_t (*_iolib_loader_get_elements_t)(iolib_loader_t, iolib_storage_element_type_t, iolib_storage_element_t *, size_t);
+IOLIB_EXTERN _iolib_loader_get_elements_t iolibLoaderGetElements;
 
 /////////////////////////// Storage Element Handling ///////////////////////////
 
