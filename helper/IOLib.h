@@ -409,8 +409,8 @@ IOLIB_EXTERN _iolib_loader_get_name_t iolibLoaderGetName;
  * Returns the number of storage elements of the given type that a certain
  * loader has.
  */
-typedef size_t (*_iolib_loader_get_num_elements)(iolib_loader_t, iolib_storage_element_type_t, int *);
-IOLIB_EXTERN _iolib_loader_get_num_elements iolibLoaderGetNumElements;
+typedef size_t (*_iolib_loader_get_num_elements_t)(iolib_loader_t, iolib_storage_element_type_t, int *);
+IOLIB_EXTERN _iolib_loader_get_num_elements_t iolibLoaderGetNumElements;
 
 /**
  * Force the specified loader to perform an inventory of all tapes. This will

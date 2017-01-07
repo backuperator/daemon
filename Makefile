@@ -8,10 +8,10 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 LIBS := c++ cryptopp boost_system boost_filesystem glog protobuf
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies dependencies/glog/src
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
-LIB_DIRS := dependencies/cryptopp dependencies/glog/.libs
+LIB_DIRS := dependencies/cryptopp
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
 CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer

@@ -1,22 +1,22 @@
-TARGET_EXEC ?= chunk-parser
+TARGET_EXEC ?= iolib-freebsd
 
 BUILD_DIR ?= ./build
-SRC_DIRS ?= ./src ../helper
+SRC_DIRS ?= src
 
-SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s) ../src/Logging.cpp
+SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ cryptopp boost_filesystem boost_program_options boost_system glog
+LIBS := c++ cryptopp boost_system glog
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) ../inc ../src ../dependencies /usr/local/include
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) ../inc ../helper ../dependencies
+INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
 LIB_DIRS := ../dependencies/cryptopp
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -fvisibility=hidden
 CPPFLAGS ?= $(CFLAGS) -std=c++11
-LDFLAGS ?= -L/usr/local/lib $(LIB_FLAGS)
+LDFLAGS ?= -dynamiclib -L/usr/local/lib $(LIB_FLAGS)
 
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)

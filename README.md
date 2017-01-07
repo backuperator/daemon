@@ -19,3 +19,7 @@ only library, so no compilation is required.
 Google's Protocol Buffers (protobuf) library is used as a way to serialize data
 that's exchanged over the network connection. Like Boost, we assume that the
 protobuf library is installed system-wide.
+
+### Google glog
+`glog` provides a simple, yet feature-rich logging API. It's assumed that glog
+is installed system-wide.

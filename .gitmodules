@@ -4,9 +4,6 @@
 [submodule "dependencies/libsocket"]
 	path = dependencies/libsocket
 	url = https://github.com/dermesser/libsocket.git
-[submodule "dependencies/glog"]
-	path = dependencies/glog
-	url = https://github.com/google/glog.git
 [submodule "dependencies/CTPL"]
 	path = dependencies/CTPL
 	url = https://github.com/vit-vit/CTPL.git
