@@ -13,8 +13,12 @@
 #include <cstdint>
 #include <string>
 
-// forrward declare this; it's defined in sys/chio.h
+#include <IOLib_types.h>
+
+// forrward declare these structs; it's defined in sys/chio.h
 struct changer_element_status;
+struct changer_voltag;
+typedef changer_voltag changer_voltag_t;
 
 namespace iolibbsd {
 
@@ -26,8 +30,18 @@ class Element {
         ~Element();
 
     private:
-        off_t index;
         Loader *parent;
+
+        // Logical address of this element in the changer
+        off_t address;
+        // Flags that define the state of this element
+        iolib_storage_element_flags_t flags;
+        // Volume tag (barcode) if present
+        std::string volTag;
+
+
+        void _parseChElementFlags(u_char);
+        std::string _stringFromChVolTag(changer_voltag_t);
 };
 
 } // namespace iolibbsd
