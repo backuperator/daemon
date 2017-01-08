@@ -23,6 +23,7 @@ class Loader {
         ~Loader();
 
         size_t getNumElementsForType(iolib_storage_element_type_t);
+        void getElementsForType(iolib_storage_element_type_t, size_t, Element **);
 
         iolib_error_t performInventory();
         iolib_error_t moveElement(Element *, Element *);
@@ -39,6 +40,7 @@ class Loader {
         size_t numPickers, numSlots, numPortals, numDrives;
 
         std::vector<Element> elements;
+
 
         void _openCh();
         void _closeCh();

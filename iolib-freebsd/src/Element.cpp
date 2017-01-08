@@ -15,6 +15,9 @@ namespace iolibbsd {
  */
 Element::Element(Loader *loader, iolib_storage_element_type_t type,
                  struct changer_element_status *chElement) {
+    CHECK(loader != NULL) << "Element must be created with a parent";
+    CHECK(chElement != NULL) << "chio struct must be specified";
+
     this->parent = loader;
 
     // Parse the changer element structure

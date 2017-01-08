@@ -337,8 +337,9 @@ IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t _loader,
                                                   size_t outLen) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    Element **outBuf = reinterpret_cast<Element **>(out);
+    loader->getElementsForType(type, outLen, outBuf);
+    return 0;
 }
 
 /////////////////////////// Storage Element Handling ///////////////////////////

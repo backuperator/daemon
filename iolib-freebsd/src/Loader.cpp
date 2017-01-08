@@ -11,6 +11,8 @@ namespace iolibbsd {
  * Initializes the loader.
  */
 Loader::Loader(const char *ch, const char *pass) {
+    CHECK(ch != NULL) << "Changer device file must be specified";
+
     this->devCh = ch;
     this->devPass = pass;
 
@@ -55,6 +57,30 @@ size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {
 }
 
 /**
+ * Gets n elements of the specified type, writing pointers to them into the
+ * given buffer.
+ */
+void Loader::getElementsForType(iolib_storage_element_type_t type, size_t len, Element **out) {
+    size_t itemsWritten = 0;
+
+    CHECK(len > 0) << "Length may not be zero!";
+    CHECK(out != NULL) << "Output array may not be NULL";
+
+    // Iterate through all elements
+    for(auto it = this->elements.begin(); it < this->elements.end(); it++) {
+        // If we've writen as many items as the array is long, exit.
+        if(itemsWritten == len) {
+            break;
+        }
+
+        // Check if this element is of the appropriate type
+        if(it->getType() == type) {
+            out[itemsWritten++] = &(*it);
+        }
+    }
+}
+
+/**
  * Moves the element from `source` to `dest`. This assumes that dest is empty;
  * if it isn't, the results are undefined, and Bad Things may happen.
  */
@@ -62,6 +88,9 @@ iolib_error_t Loader::moveElement(Element *src, Element *dest) {
     int err = 0;
 
     // Check that these are our elements
+    CHECK(src != NULL) << "Source must be specified";
+    CHECK(dest != NULL) << "Destination must be specified";
+
     CHECK(src->parent == this) << "Source element is not from this loader";
     CHECK(dest->parent == this) << "Destination element is not from this loader";
 
