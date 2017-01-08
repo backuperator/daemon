@@ -1,4 +1,4 @@
-TARGET_EXEC ?= iolib-freebsd
+TARGET_EXEC ?= iolib-freebsd.so
 
 BUILD_DIR ?= ./build
 SRC_DIRS ?= src
@@ -14,9 +14,9 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 LIB_DIRS := ../dependencies/cryptopp
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -fvisibility=hidden
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -fvisibility=hidden -g
 CPPFLAGS ?= $(CFLAGS) -std=c++11
-LDFLAGS ?= -dynamiclib -L/usr/local/lib $(LIB_FLAGS)
+LDFLAGS ?= -shared -L/usr/local/lib $(LIB_FLAGS)
 
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)

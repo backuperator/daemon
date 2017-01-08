@@ -105,7 +105,7 @@ void BackupJob::_scanDirectory(path inPath, BackupFile *parent) {
 			 */
 			path newPath(entry);
 
-			if(!newPath.filename_is_dot() && !newPath.filename_is_dot_dot()) {
+			//if(!newPath.filename_is_dot() && !newPath.filename_is_dot_dot()) {
 				BackupFile file = BackupFile(newPath, parent);
 				this->backupFiles.push_back(file);
 
@@ -115,7 +115,7 @@ void BackupJob::_scanDirectory(path inPath, BackupFile *parent) {
 					this->threadPool->push(boost::bind(&BackupJob::_scanDirectory, this,
 													   newPath, &file));
 				}
-			}
+			//}
 		}
     }
 }

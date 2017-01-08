@@ -50,8 +50,8 @@ _iolib_close_session_t iolibCloseSession;
  */
 void iolibLoadLib() {
     // Load the library
-    lib = dlopen("iolib.so", RTLD_NOW);
-    CHECK(lib != NULL) << "Could not load iolib.so";
+    lib = dlopen("./iolib.so", RTLD_NOW);
+    CHECK(lib != NULL) << "Could not load iolib.so: " << dlerror();
 
     // Attempt to resolve functions.
     IOLIB_RESOLVE_FUNC(iolibInit);
