@@ -27,6 +27,7 @@ class Drive {
 		iolib_error_t writeFileMark();
 
 		size_t writeTape(void *, size_t, iolib_error_t *);
+		size_t readTape(void *, size_t, iolib_error_t *);
 
 	private:
 		int saUnitNumber;

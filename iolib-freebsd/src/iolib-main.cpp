@@ -235,8 +235,7 @@ IOLIB_EXPORT size_t iolibDriveRead(iolib_drive_t _drive, void *buf,
                                    size_t len, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->readTape(buf, len, outErr);
 }
 
 /**

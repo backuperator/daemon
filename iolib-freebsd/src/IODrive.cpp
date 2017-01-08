@@ -246,6 +246,62 @@ size_t Drive::writeTape(void *buf, size_t len, iolib_error_t *outErr) {
     return totalBytesWritten;
 }
 
+/**
+ * Reads the specified number of bytes from the tape. If a file mark is
+ * encountered before the buffer can be filled, the read is terminated.
+ */
+size_t Drive::readTape(void *buf, size_t len, iolib_error_t *outErr) {
+    int err = 0;
+
+    size_t totalBytesRead = 0;
+    size_t lastReadLen = 0;
+
+    // Ensure device is open
+    _openSa();
+
+    // Prepare for writing
+    uint8_t *readPtr = reinterpret_cast<uint8_t *>(buf);
+
+    while(totalBytesRead < len) {
+        size_t bytesLeft = len - totalBytesRead;
+
+        // Check if the number of bytes to be read is less than the chunk size.
+        if(bytesLeft < this->maxBlockSz) {
+            // If so, simply do a read of that remaining size.
+            lastReadLen = read(this->fdSa, readPtr, bytesLeft);
+            PLOG_IF(ERROR, lastReadLen == -1) << "Couldn't read from " << this->devSa;
+
+            if(lastReadLen != bytesLeft) {
+                LOG(INFO) << "Read " << lastReadLen << " bytes, expected "
+                          << bytesLeft << "; assuming end of tape";
+                break;
+            }
+        }
+        // Otherwise, perform a write of the max IO size
+        else {
+            lastReadLen = read(this->fdSa, readPtr, this->maxBlockSz);
+            PLOG_IF(ERROR, lastReadLen == -1) << "Couldn't read from " << this->devSa;
+
+            if(lastReadLen != this->maxBlockSz) {
+                LOG(INFO) << "Read " << lastReadLen << " bytes, expected "
+                          << this->maxBlockSz << "; assuming end of tape";
+                break;
+            }
+        }
+
+        // If no more bytes were read, we're done
+        if(lastReadLen == 0) {
+            break;
+        }
+
+        // Update the counter and pointer following the read
+        readPtr += lastReadLen;
+        totalBytesRead += lastReadLen;
+    }
+
+    return totalBytesRead;
+}
+
 
 /**
  * Determines the unit number of this drive.
