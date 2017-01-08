@@ -350,8 +350,7 @@ IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t _loader,
 IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t _element, iolib_error_t *outErr) {
     GET_CLASS(Element, element);
 
-    // TODO: implement
-    return -1;
+    return element->getAddress();
 }
 
 /**
@@ -365,8 +364,7 @@ IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_el
                                                                 iolib_error_t *outErr) {
     GET_CLASS(Element, element);
 
-    // TODO: implement
-    return (iolib_storage_element_flags_t) 0;
+    return element->getFlags();
 }
 
 /**
@@ -376,8 +374,12 @@ IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_el
 IOLIB_EXPORT iolib_string_t iolibElementGetLabel(iolib_storage_element_t _element) {
     GET_CLASS(Element, element);
 
-    // TODO: Implement this
-    return "<<< UNIMPLIMENTED >>>";
+    // get length in bytes for the string
+    size_t length = element->getVolumeTag().size();
+    char *buf = static_cast<char *>(malloc(length + 1));
+    strncpy(buf, element->getVolumeTag().c_str(), length);
+
+    return static_cast<iolib_string_t>(buf);
 }
 
 

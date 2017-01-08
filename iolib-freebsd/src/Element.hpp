@@ -29,6 +29,16 @@ class Element {
         Element(Loader *, struct changer_element_status *);
         ~Element();
 
+        off_t getAddress() {
+            return this-> address;
+        }
+        iolib_storage_element_flags_t getFlags() {
+            return this->flags;
+        }
+        std::string getVolumeTag() {
+            return this->volTag;
+        }
+
     private:
         Loader *parent;
 

@@ -29,6 +29,29 @@ Loader::~Loader() {
 
 }
 
+
+/**
+ * Returns the number of elements for a given element type.
+ */
+size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {
+    if(type == kStorageElementTransport) { // Transport element (picker)
+        return this->numPickers;
+    } else if(type == kStorageElemenetSlot) { // Storage element (slot)
+        return this->numSlots;
+    } else if(type == kStorageElementPortal) { // Portal
+        return this->numPortals;
+    } else if(type == kStorageElementDrive) { // Data transfer element (drive)
+        return this->numDrives;
+    } else if(type == kStorageElementAny) {
+        return this->numPickers + this->numSlots + this->numPortals
+                                + this->numDrives;
+    }
+
+    // we should NOT get down here
+    return -1;
+}
+
+
 /**
  * Opens the changer device.
  */

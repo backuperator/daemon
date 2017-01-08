@@ -22,6 +22,8 @@ class Loader {
         Loader(const char *, const char *);
         ~Loader();
 
+        size_t getNumElementsForType(iolib_storage_element_type_t);
+
     private:
         const char *devCh, *devPass;
         int fdCh = -1, fdPass = -1;

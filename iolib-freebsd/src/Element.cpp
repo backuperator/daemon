@@ -1,6 +1,7 @@
 #include "Element.hpp"
 #include "Loader.hpp"
 
+#include <glog/logging.h>
 #include <sys/chio.h>
 
 namespace iolibbsd {
@@ -18,6 +19,8 @@ Element::Element(Loader *loader, struct changer_element_status *chElement) {
     // Parse the changer element structure
     this->address = chElement->ces_addr;
     this->volTag = _stringFromChVolTag(chElement->ces_pvoltag);
+
+    _parseChElementFlags(chElement->ces_flags);
 }
 
 /**
