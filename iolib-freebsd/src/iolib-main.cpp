@@ -275,8 +275,7 @@ IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
                                               iolib_error_t *outErr) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    return loader->getNumElementsForType(type);
 }
 
 /**
@@ -287,8 +286,7 @@ IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
 IOLIB_EXPORT iolib_error_t iolibLoaderPerformInventory(iolib_loader_t _loader) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    return loader->performInventory();
 }
 
 /**

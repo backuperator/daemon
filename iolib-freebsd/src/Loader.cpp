@@ -17,6 +17,9 @@ Loader::Loader(const char *ch, const char *pass) {
     // Attempt to open the device first.
     _openCh();
 
+    // Attempt to perform an inventory of this loader's storage elements.
+    // performInventory();
+
     // Determine the properties of this changer, then fetch the inventory
     _fetchLoaderParams();
     _fetchInventory();
@@ -53,20 +56,53 @@ size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {
 
 
 /**
+ * Sends the SCSI INITIALIZE ELEMENT STATUS command, to force the drive to re-
+ * scan its inventory. We don't really know when this command will finish, but
+ * we do have a timeout we can specify - the default is 30 seconds.
+ */
+iolib_error_t Loader::performInventory() {
+    int err = 0;
+
+    // Ensure driver is open
+    _openCh();
+
+    // Run command
+    LOG(INFO) << "Waiting for ioctl CHIOIELEM to cook magic smoke for " << this->devCh;
+    err = ioctl(this->fdCh, CHIOIELEM, &this->inventoryTimeout);
+    LOG_IF(ERROR, err != 0) << "Couldn't execute CHIOIELEM on " << this->devCh
+                            << ": " << errno;
+
+    // Close driver
+    _closeCh();
+
+    return err;
+}
+
+/**
  * Opens the changer device.
+ *
+ * NOTE: This works on a reference counter principle. This function can be
+ * called as many times as desired, and a counter is incremented every time,
+ * but the file is only opened if it isn't open yet.
  */
 void Loader::_openCh() {
     // Only open the device if it's not already open
     if(this->fdCh == -1) {
         this->fdCh = open(this->devCh, O_RDWR | O_EXLOCK);
         PCHECK(this->fdCh != -1) << "Couldn't open " << this->devCh << ": ";
-    }
 
-    this->fdChRefs++;
+        this->fdChRefs++;
+    } else {
+        this->fdChRefs++;
+    }
 }
 
 /**
  * Closes the changer device, if opened.
+ *
+ * NOTE: This works on a reference counter principle. This function can be
+ * called as many times as desired, and a counter is decremented every time,
+ * but the file is only closed if the counter reaches zero.
  */
 void Loader::_closeCh() {
     int err = 0;
@@ -87,6 +123,8 @@ void Loader::_closeCh() {
  * elements of each kind this changer has.
  */
 void Loader::_fetchLoaderParams() {
+    _openCh();
+
     int err = 0;
     struct changer_params params;
 
@@ -104,6 +142,8 @@ void Loader::_fetchLoaderParams() {
                       << this->numSlots << " slots, "
                       << this->numPortals << " portals, "
                       << this->numDrives << " drives";
+
+    _closeCh();
 }
 
 /**
@@ -111,6 +151,8 @@ void Loader::_fetchLoaderParams() {
  * on each of the kinds of storage elements.
  */
 void Loader::_fetchInventory() {
+    _openCh();
+
     int err = 0;
     struct changer_element_status_request request;
 
@@ -157,6 +199,8 @@ void Loader::_fetchInventory() {
 
     // Delete the memory we allocated previously
     delete[] elementStat;
+
+    _closeCh();
 }
 
 } // namespace iolibbsd

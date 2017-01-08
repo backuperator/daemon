@@ -24,10 +24,15 @@ class Loader {
 
         size_t getNumElementsForType(iolib_storage_element_type_t);
 
+        iolib_error_t performInventory();
+
     private:
         const char *devCh, *devPass;
         int fdCh = -1, fdPass = -1;
         std::atomic_int fdChRefs, fdPassRefs;
+
+        // Timeout for the INITIALIZE ELEMENT STATUS command, in seconds
+        const uint32_t inventoryTimeout = 30; 
 
         // This is information about the loader
         size_t numPickers, numSlots, numPortals, numDrives;
