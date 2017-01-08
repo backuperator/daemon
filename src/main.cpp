@@ -7,7 +7,14 @@
  */
 int main(int argc, char *argv[]) {
 	Logging::setUp(argv);
+
+	// Set up the IOLib
     iolibLoadLib();
+
+	iolib_error_t ioErr = iolibInit();
+	CHECK(ioErr == 0) << "Error initializing IOLib: " << ioErr;
+
+    sleep(5);
 
     // Set up the listener
     DaemonListener listener;

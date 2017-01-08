@@ -1,19 +1,36 @@
+#include <mutex>
+#include <glog/logging.h>
+
 #include <IOLib_types.h>
 #include <IOLib_lib.h>
+#include "BSDIOLib.hpp"
 
-#include <glog/logging.h>
+using namespace iolibbsd;
+
+// Shared IO lib class - this is what's created by the init function.
+static BSDIOLib *_ioLibShared = NULL;
+std::mutex _ioLibSharedLock;
 
 //////////////////////// Initialization and Destructors ////////////////////////
 /**
  * Global library initializer.
  */
 IOLIB_EXPORT iolib_error_t iolibInit(void) {
-    LOG(INFO) << "Initializing iolib-freebsd";
+    std::unique_lock<std::mutex> lck(_ioLibSharedLock,std::defer_lock);
 
-    // Scan the SCSI bus.
+    // Create the IOLib.
+    lck.lock();
 
-    // TODO: do things here
-    return 0;
+    if(_ioLibShared != NULL) {
+        LOG(WARNING) << "_ioLibShared was not NULL when iolibInit was called";
+        delete _ioLibShared;
+    }
+
+    _ioLibShared = new BSDIOLib();
+
+    // done
+    lck.unlock();
+    return (_ioLibShared != NULL) ? 0 : -1;
 }
 
 /**
@@ -22,9 +39,18 @@ IOLIB_EXPORT iolib_error_t iolibInit(void) {
  * guaranteed to be called before the program exits normally.
  */
 IOLIB_EXPORT iolib_error_t iolibExit(void) {
-    LOG(INFO) << "Exiting iolib-freebsd";
+    std::unique_lock<std::mutex> lck(_ioLibSharedLock,std::defer_lock);
 
-    // TODO: do things here
+    // Delete the IOLib object
+    lck.lock();
+
+    CHECK(_ioLibShared != NULL) << "_ioLibShared was NULL when iolibExit was called";
+
+    delete _ioLibShared;
+    _ioLibShared = NULL;
+
+    // done
+    lck.unlock();
     return 0;
 }
 
