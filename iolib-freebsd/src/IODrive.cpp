@@ -2,6 +2,7 @@
 
 #include <sys/mtio.h>
 #include <sys/ioctl.h>
+#include <sys/sysctl.h>
 
 #include "Drive.hpp"
 
@@ -15,6 +16,9 @@ Drive::Drive(const char *sa, const char *pass) {
 
     this->devSa = sa;
     this->devPass = pass;
+
+    // Determine maximum IO size (for writes/reads)
+    _determineMaxIOSize();
 }
 
 /**
@@ -145,7 +149,81 @@ iolib_error_t Drive::rewind() {
     return err;
 }
 
+/**
+ * Ejects the tape currently in the drive.
+ *
+ * This is implemented as taking the drive offline. Inserting a new tape should
+ * bring the drive online again.
+ */
+iolib_error_t Drive::eject() {
+    int err = 0;
 
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    struct mtop mt_com;
+
+    mt_com.mt_count = 1;
+    mt_com.mt_op = MTOFFL;
+
+    err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTOFFL on " << this->devSa;
+
+    // Close device once we're done.
+    _closeSa();
+    return err;
+}
+
+/**
+ * Writes a file mark at the current position on tape.
+ */
+iolib_error_t Drive::writeFileMark() {
+    int err = 0;
+
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    struct mtop mt_com;
+
+    mt_com.mt_count = 1;
+    mt_com.mt_op = MTWEOF;
+
+    err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTWEOF on " << this->devSa;
+
+    // Close device once we're done.
+    _closeSa();
+    return err;
+}
+
+
+/**
+ * Determines the maximum IO size for this drive.
+ */
+void Drive::_determineMaxIOSize() {
+    // Extract the unit number from the device string
+    std::string devSaStr(this->devSa);
+
+    size_t last_index = devSaStr.find_last_not_of("0123456789");
+    std::string unitNumberStr = devSaStr.substr(last_index + 1);
+
+    int unitNumber = stoi(unitNumberStr);
+
+    // Get the maximum block size for this device
+    char sysCtlName[64];
+    snprintf(reinterpret_cast<char *>(&sysCtlName), 64,
+             "kern.cam.sa.%d.maxio", unitNumber);
+
+    int maxIO;
+    size_t maxIOLen = sizeof(int);
+    sysctlbyname(sysCtlName, &maxIO, &maxIOLen, NULL, 0);
+
+    this->maxBlockSz = maxIO;
+
+    LOG(INFO) << "\t\tMaximum IO size: " << this->maxBlockSz << " bytes";
+}
 
 /**
  * Opens the sequential access device.

@@ -100,7 +100,7 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
     // TODO: implement
-    return NULL;
+    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
 }
 
 /**
@@ -154,12 +154,14 @@ IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t _drive) {
 /**
  * Ejects the tape from the drive. Note that this call should only be used if
  * the drive is idle.
+ *
+ * How does ejecting work in the context of FreeBSD's tape infrastructure? I
+ * _think_ that this is automatically done when the drive is taken offline.
  */
 IOLIB_EXPORT iolib_error_t iolibDriveEject(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->eject();
 }
 
 /**
@@ -173,6 +175,7 @@ IOLIB_EXPORT iolib_error_t iolibDriveLockMedium(iolib_drive_t _drive, bool lockF
     GET_CLASS(Drive, drive);
 
     // TODO: implement
+    LOG(WARNING) << "iolibDriveLockMedium is not implemented - doing nothing";
     return -1;
 }
 
@@ -258,7 +261,7 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
     GET_CLASS(Loader, loader);
 
     // TODO: implement
-    return "<<< UNIMPLIMENTED >>>";
+    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
 }
 
 /**

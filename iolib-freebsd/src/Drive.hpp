@@ -22,13 +22,19 @@ class Drive {
 		iolib_error_t seekToLogicalBlkPos(off_t);
 
 		iolib_error_t rewind();
+		iolib_error_t eject();
+
+		iolib_error_t writeFileMark();
 
 	private:
 		const char *devSa, *devPass;
         int fdSa = -1, fdPass = -1;
         std::atomic_int fdSaRefs, fdPassRefs;
 
+		size_t maxBlockSz;
 
+
+		void _determineMaxIOSize();
 		void _openSa();
 		void _closeSa();
 

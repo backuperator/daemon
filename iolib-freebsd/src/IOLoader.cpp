@@ -202,10 +202,10 @@ void Loader::_fetchLoaderParams() {
     this->numPortals = params.cp_nportals;
     this->numDrives = params.cp_ndrives;
 
-    LOG(INFO) << "\t" << this->numPickers << " pickers, "
-                      << this->numSlots << " slots, "
-                      << this->numPortals << " portals, "
-                      << this->numDrives << " drives";
+    LOG(INFO) << "\t\t" << this->numPickers << " pickers, "
+                        << this->numSlots << " slots, "
+                        << this->numPortals << " portals, "
+                        << this->numDrives << " drives";
 
     _closeCh();
 }
