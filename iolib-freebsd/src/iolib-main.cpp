@@ -10,6 +10,8 @@
 IOLIB_EXPORT iolib_error_t iolibInit(void) {
     LOG(INFO) << "Initializing iolib-freebsd";
 
+    // Scan the SCSI bus.
+
     // TODO: do things here
     return 0;
 }

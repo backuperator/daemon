@@ -96,7 +96,7 @@ void TapeWriter::_workerEntry() {
 void TapeWriter::_writeChunk(Chunk *chunk) {
 	LOG(INFO) << "Writing chunk " << chunk->getChunkNumber() << " to tape";
 
-	// For now, just write to a file.
+	/*// For now, just write to a file.
 	std::ostringstream nameStr;
 	nameStr << chunk->getChunkNumber() << ".chunk";
 	std::string name  = nameStr.str();
@@ -104,7 +104,7 @@ void TapeWriter::_writeChunk(Chunk *chunk) {
 
 	FILE *fp = fopen(nameC, "w+b");
 	fwrite(chunk->backingStore, chunk->backingStoreActualSize, 1, fp);
-	fclose(fp);
+	fclose(fp);*/
 
 
 	// When done writing, delete the chunk.
