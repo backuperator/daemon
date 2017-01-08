@@ -14,7 +14,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 LIB_DIRS := ../dependencies/cryptopp
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
-CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -fvisibility=hidden -g
+CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -fvisibility=hidden -g -fPIC
 CPPFLAGS ?= $(CFLAGS) -std=c++11
 LDFLAGS ?= -shared -L/usr/local/lib $(LIB_FLAGS)
 

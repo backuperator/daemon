@@ -151,6 +151,9 @@ typedef enum {
  * Various flags that describe a storage element.
  */
 typedef enum {
+    /// No flags (this is mostly there to make C++ shut the fuck up)
+    kStorageElementNoFlags = 0,
+
 	/// The element contains a tape.
 	kStorageElementFull = (1 << 0),
 	/// The medium was inserted by the operator (i.e. mailslot)
@@ -165,6 +168,23 @@ typedef enum {
 	/// Element supports importing
 	kStorageElementSupportsImport = (1 << 9)
 } iolib_storage_element_flags_t;
+
+#ifdef __cplusplus
+inline iolib_storage_element_flags_t operator|(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
+    return static_cast<iolib_storage_element_flags_t>(static_cast<int>(a) | static_cast<int>(b));
+}
+inline iolib_storage_element_flags_t operator&(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
+    return static_cast<iolib_storage_element_flags_t>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+inline iolib_storage_element_flags_t operator|=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
+    return a | b;
+}
+inline iolib_storage_element_flags_t operator&=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
+    return a & b;
+}
+
+#endif
 
 /**
  * A library is the device that the IOLib will enumerate. It doesn't correspond

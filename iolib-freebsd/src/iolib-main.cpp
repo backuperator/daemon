@@ -1,17 +1,44 @@
-#include <IOLib_Types.h>
-#include <IOLib_lib.h>
-
+#include <mutex>
 #include <glog/logging.h>
+
+#include <IOLib_types.h>
+#include <IOLib_lib.h>
+#include "BSDIOLib.hpp"
+
+using namespace iolibbsd;
+
+/**
+ * This macro converts the given void (or any other generic type) pointer into
+ * that of the specified class. It's assumed that the variable name of the in
+ * pointer is the same as the out pointer, but with a prepended underscore.
+ */
+#define GET_CLASS(className, varName) \
+    className *varName = static_cast<className *>(_##varName);
+
+// Shared IO lib class - this is what's created by the init function.
+static BSDIOLib *_ioLibShared = NULL;
+std::mutex _ioLibSharedLock;
 
 //////////////////////// Initialization and Destructors ////////////////////////
 /**
  * Global library initializer.
  */
 IOLIB_EXPORT iolib_error_t iolibInit(void) {
-    LOG(INFO) << "Initializing iolib-freebsd";
+    std::unique_lock<std::mutex> lck(_ioLibSharedLock,std::defer_lock);
 
-    // TODO: do things here
-    return 0;
+    // Create the IOLib.
+    lck.lock();
+
+    if(_ioLibShared != NULL) {
+        LOG(WARNING) << "_ioLibShared was not NULL when iolibInit was called";
+        delete _ioLibShared;
+    }
+
+    _ioLibShared = new BSDIOLib();
+
+    // done
+    lck.unlock();
+    return (_ioLibShared != NULL) ? 0 : -1;
 }
 
 /**
@@ -20,9 +47,18 @@ IOLIB_EXPORT iolib_error_t iolibInit(void) {
  * guaranteed to be called before the program exits normally.
  */
 IOLIB_EXPORT iolib_error_t iolibExit(void) {
-    LOG(INFO) << "Exiting iolib-freebsd";
+    std::unique_lock<std::mutex> lck(_ioLibSharedLock,std::defer_lock);
 
-    // TODO: do things here
+    // Delete the IOLib object
+    lck.lock();
+
+    CHECK(_ioLibShared != NULL) << "_ioLibShared was NULL when iolibExit was called";
+
+    delete _ioLibShared;
+    _ioLibShared = NULL;
+
+    // done
+    lck.unlock();
     return 0;
 }
 
@@ -60,7 +96,9 @@ IOLIB_EXPORT void iolibEnumerateDevicesFree(iolib_library_t *lib, int num) {
  * Returns a string that describes this tape drive's capabilities. This is just
  * intended for display to the user more than anything.
  */
-IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t drive) {
+IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return NULL;
 }
@@ -68,7 +106,9 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t drive) {
 /**
  * Writes the status of the specified tape drive into the supplied buffer.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t drive, iolib_drive_status_t *outStatus) {
+IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive_status_t *outStatus) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -76,7 +116,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t drive, iolib_drive_
 /**
  * Places the drive's current logical block position in the specified variable.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetPosition(iolib_drive_t drive, size_t *outPos) {
+IOLIB_EXPORT iolib_error_t iolibDriveGetPosition(iolib_drive_t _drive, size_t *outPos) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -85,7 +127,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveGetPosition(iolib_drive_t drive, size_t *ou
  * Seeks the drive to the specified logical block position. The drive must NOT
  * be pre-occupied performing any other operation.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t drive, size_t block) {
+IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, size_t block) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -94,7 +138,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t drive, size_t 
  * Determines the drive's current operation, if such information is currently
  * available from the drive.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t drive, iolib_drive_operation_t *outOp) {
+IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, iolib_drive_operation_t *outOp) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -103,7 +149,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t drive, io
  * Rewinds the tape to the beginning. This call will block until the rewind
  * operation has completed.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t drive) {
+IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -112,7 +160,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t drive) {
  * Ejects the tape from the drive. Note that this call should only be used if
  * the drive is idle.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveEject(iolib_drive_t drive) {
+IOLIB_EXPORT iolib_error_t iolibDriveEject(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -124,7 +174,9 @@ IOLIB_EXPORT iolib_error_t iolibDriveEject(iolib_drive_t drive) {
  *
  * To lock the medium, pass true for the second argument; false unlocks it.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveLockMedium(iolib_drive_t drive, bool lockFlag) {
+IOLIB_EXPORT iolib_error_t iolibDriveLockMedium(iolib_drive_t _drive, bool lockFlag) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -146,8 +198,10 @@ IOLIB_EXPORT iolib_error_t iolibDriveLockMedium(iolib_drive_t drive, bool lockFl
  *
  * Any error codes are supplied through the optional error pointer.
  */
-IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t drive, void *buf, size_t len,
+IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t _drive, void *buf, size_t len,
                                     bool writeFileMark, iolib_error_t *outErr) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -162,7 +216,9 @@ IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t drive, void *buf, size_t len,
  * will overwrite the file mark, while reads will return 0 bytes, but instead
  * raise an "end-of-device" notification.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveWriteFileMark(iolib_drive_t drive) {
+IOLIB_EXPORT iolib_error_t iolibDriveWriteFileMark(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -179,8 +235,10 @@ IOLIB_EXPORT iolib_error_t iolibDriveWriteFileMark(iolib_drive_t drive) {
  *
  * Any error codes are supplied through the optional error pointer.
  */
-IOLIB_EXPORT size_t iolibDriveRead(iolib_drive_t drive, void *buf,
+IOLIB_EXPORT size_t iolibDriveRead(iolib_drive_t _drive, void *buf,
                                    size_t len, iolib_error_t *outErr) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -188,7 +246,9 @@ IOLIB_EXPORT size_t iolibDriveRead(iolib_drive_t drive, void *buf,
 /**
  * Checks whether the drive has encountered the end of the medium (EOM) yet.
  */
-IOLIB_EXPORT bool iolibDriveIsEOM(iolib_drive_t drive, iolib_error_t *outErr) {
+IOLIB_EXPORT bool iolibDriveIsEOM(iolib_drive_t _drive, iolib_error_t *outErr) {
+    GET_CLASS(Drive, drive);
+
     // TODO: implement
     return -1;
 }
@@ -199,7 +259,9 @@ IOLIB_EXPORT bool iolibDriveIsEOM(iolib_drive_t drive, iolib_error_t *outErr) {
  * Returns a string that describes this loaders's capabilities. This is just
  * intended for display to the user more than anything.
  */
-IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t loader) {
+IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
+    GET_CLASS(Loader, loader);
+
     // TODO: implement
     return "<<< UNIMPLIMENTED >>>";
 }
@@ -208,9 +270,11 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t loader) {
  * Returns the number of storage elements of the given type that a certain
  * loader has.
  */
-IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t loader,
+IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
                                               iolib_storage_element_type_t type,
                                               iolib_error_t *outErr) {
+    GET_CLASS(Loader, loader);
+
     // TODO: implement
     return -1;
 }
@@ -220,7 +284,9 @@ IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t loader,
  * update the loader's internal status information. If the loader has the
  * capability to read tape labels (i.e. via a barcode label) that will be done.
  */
-IOLIB_EXPORT iolib_error_t iolibLoaderPerformInventory(iolib_loader_t loader) {
+IOLIB_EXPORT iolib_error_t iolibLoaderPerformInventory(iolib_loader_t _loader) {
+    GET_CLASS(Loader, loader);
+
     // TODO: implement
     return -1;
 }
@@ -229,9 +295,13 @@ IOLIB_EXPORT iolib_error_t iolibLoaderPerformInventory(iolib_loader_t loader) {
  * Moves the tape in the first storage element to that in the second. This call
  * will block while the move is taking place.
  */
-IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t loader,
-                                           iolib_storage_element_t src,
-                                           iolib_storage_element_t dest) {
+IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t _loader,
+                                           iolib_storage_element_t _src,
+                                           iolib_storage_element_t _dest) {
+    GET_CLASS(Loader, loader);
+    GET_CLASS(Element, src);
+    GET_CLASS(Element, dest);
+
     // TODO: implement
     return -1;
 }
@@ -242,9 +312,13 @@ IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t loader,
  *
  * NOTE: This may not be supported on many loaders.
  */
-IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t loader,
-                                               iolib_storage_element_t src,
-                                               iolib_storage_element_t dest) {
+IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t _loader,
+                                               iolib_storage_element_t _src,
+                                               iolib_storage_element_t _dest) {
+    GET_CLASS(Loader, loader);
+    GET_CLASS(Element, src);
+    GET_CLASS(Element, dest);
+
     // TODO: implement
     return -1;
 }
@@ -258,10 +332,12 @@ IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t loader,
  * return the same objects. Do not attempt to access/free these elements, as
  * this may cause undefined behavior.
  */
-IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t loader,
+IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t _loader,
                                                   iolib_storage_element_type_t type,
                                                   iolib_storage_element_t *out,
                                                   size_t outLen) {
+    GET_CLASS(Loader, loader);
+
     // TODO: implement
     return -1;
 }
@@ -271,9 +347,10 @@ IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t loader,
  * Returns the logical address of the storage element. This is specific to the
  * loader in use, and how it correlates to a physical slot is undefined.
  */
-IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t element, iolib_error_t *outErr) {
-    // TODO: implement
-    return -1;
+IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t _element, iolib_error_t *outErr) {
+    GET_CLASS(Element, element);
+
+    return element->getAddress();
 }
 
 /**
@@ -283,18 +360,26 @@ IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t element, iolib
  *
  * NOTE: Flags are logically ORed together.
  */
-IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_element_t element, iolib_error_t *outErr) {
-    // TODO: implement
-    return (iolib_storage_element_flags_t) 0;
+IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_element_t _element,
+                                                                iolib_error_t *outErr) {
+    GET_CLASS(Element, element);
+
+    return element->getFlags();
 }
 
 /**
  * Return the volume label of the specified element, if applicable. If no label
  * is available on the given medium (or the element is empty), NULL is returned.
  */
-IOLIB_EXPORT iolib_string_t iolibElementGetLabel(iolib_storage_element_t element) {
-    // TODO: Implement this
-    return "<<< UNIMPLIMENTED >>>";
+IOLIB_EXPORT iolib_string_t iolibElementGetLabel(iolib_storage_element_t _element) {
+    GET_CLASS(Element, element);
+
+    // get length in bytes for the string
+    size_t length = element->getVolumeTag().size();
+    char *buf = static_cast<char *>(malloc(length + 1));
+    strncpy(buf, element->getVolumeTag().c_str(), length);
+
+    return static_cast<iolib_string_t>(buf);
 }
 
 
