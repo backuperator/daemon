@@ -8,10 +8,11 @@
 #ifndef LOADER_HPP
 #define LOADER_HPP
 
+#include <fcntl.h>
 #include <vector>
 #include <atomic>
 
-#include <fcntl.h>
+#include <IOLib_types.h>
 
 #include "Element.hpp"
 

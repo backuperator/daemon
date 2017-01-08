@@ -90,15 +90,15 @@ typedef iolib_string_t (*_iolib_drive_get_name_t)(iolib_drive_t);
 IOLIB_EXTERN _iolib_drive_get_name_t iolibDriveGetName;
 
 /**
- * Writes the status of the specified tape drive into the supplied buffer.
+ * Gets the drive's status, populating the specified struct.
  */
 typedef iolib_error_t (*_iolib_drive_get_status_t)(iolib_drive_t, iolib_drive_status_t *);
 IOLIB_EXTERN _iolib_drive_get_status_t iolibDriveGetStatus;
 
 /**
- * Places the drive's current logical block position in the specified variable.
+ * Returns the drive's current logical block position.
  */
-typedef iolib_error_t (*_iolib_drive_get_position_t)(iolib_drive_t, size_t *);
+typedef off_t (*_iolib_drive_get_position_t)(iolib_drive_t, iolib_error_t *);
 IOLIB_EXTERN _iolib_drive_get_position_t iolibDriveGetPosition;
 
 /**
@@ -112,7 +112,7 @@ IOLIB_EXTERN _iolib_drive_set_position_t iolibDriveSeekToPosition;
  * Determines the drive's current operation, if such information is currently
  * available from the drive.
  */
-typedef iolib_error_t (*_iolib_drive_get_op_t)(iolib_drive_t, iolib_drive_operation_t *);
+typedef iolib_drive_operation_t (*_iolib_drive_get_op_t)(iolib_drive_t, iolib_error_t *);
 IOLIB_EXTERN _iolib_drive_get_op_t iolibDriveGetCurrentOperation;
 
 /**

@@ -31,7 +31,11 @@ Loader::Loader(const char *ch, const char *pass) {
 }
 
 Loader::~Loader() {
+    // Use the close method, but force it by setting reference count to 1
+    LOG_IF(WARNING, this->fdChRefs > 1) << "More than one open reference on file descriptor at dellocation";
 
+    this->fdChRefs = 1;
+    _closeCh();
 }
 
 
@@ -107,8 +111,7 @@ iolib_error_t Loader::moveElement(Element *src, Element *dest) {
 
     // Run the ioctl
     err = ioctl(this->fdCh, CHIOMOVE, &move);
-    LOG_IF(ERROR, err != 0) << "Couldn't execute CHIOMOVE on " << this->devCh
-                            << ": " << errno;
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute CHIOMOVE on " << this->devCh;
 
     // Close driver
     _closeCh();
@@ -131,8 +134,7 @@ iolib_error_t Loader::performInventory() {
     // Run command
     LOG(INFO) << "Waiting for ioctl CHIOIELEM to cook magic smoke for " << this->devCh;
     err = ioctl(this->fdCh, CHIOIELEM, &this->inventoryTimeout);
-    LOG_IF(ERROR, err != 0) << "Couldn't execute CHIOIELEM on " << this->devCh
-                            << ": " << errno;
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute CHIOIELEM on " << this->devCh;
 
     // Close driver
     _closeCh();

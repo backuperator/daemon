@@ -6,12 +6,16 @@
 
 #include <fcntl.h>
 
+#include <IOLib_types.h>
+
 namespace iolibbsd {
 
 class Drive {
 	public:
 		Drive(const char *, const char *);
 		~Drive();
+
+		iolib_drive_operation_t getDriveOp();
 
 	private:
 		const char *devSa, *devPass;
@@ -21,6 +25,8 @@ class Drive {
 
 		void _openSa();
 		void _closeSa();
+
+		iolib_drive_operation_t _mtioToNativeStatus(short);
 };
 
 } // namespace iolibbsd

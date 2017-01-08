@@ -104,19 +104,19 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
 }
 
 /**
- * Writes the status of the specified tape drive into the supplied buffer.
+ * Gets the drive's status, populating the specified struct.
  */
 IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive_status_t *outStatus) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
+    // TODO: Implement
     return -1;
 }
 
 /**
- * Places the drive's current logical block position in the specified variable.
+ * Returns the drive's current logical block position.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetPosition(iolib_drive_t _drive, size_t *outPos) {
+IOLIB_EXPORT off_t iolibDriveGetPosition(iolib_drive_t _drive, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
     // TODO: implement
@@ -138,11 +138,10 @@ IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, size_t
  * Determines the drive's current operation, if such information is currently
  * available from the drive.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, iolib_drive_operation_t *outOp) {
+IOLIB_EXPORT iolib_drive_operation_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->getDriveOp();
 }
 
 /**
@@ -307,7 +306,7 @@ IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t _loader,
  * Exchanges the media in the first storage element with that in the second.
  * This call will block while the move is taking place.
  *
- * NOTE: This may not be supported on many loaders.
+ * NOTE: This is not supported on many loaders.
  */
 IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t _loader,
                                                iolib_storage_element_t _src,
