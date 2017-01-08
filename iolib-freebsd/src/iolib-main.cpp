@@ -200,8 +200,7 @@ IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t _drive, void *buf, size_t len,
                                     bool writeFileMark, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->writeTape(buf, len, outErr);
 }
 
 /**
@@ -217,8 +216,7 @@ IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t _drive, void *buf, size_t len,
 IOLIB_EXPORT iolib_error_t iolibDriveWriteFileMark(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->writeFileMark();
 }
 
 /**

@@ -26,17 +26,26 @@ class Drive {
 
 		iolib_error_t writeFileMark();
 
+		size_t writeTape(void *, size_t, iolib_error_t *);
+
 	private:
-		const char *devSa, *devPass;
-        int fdSa = -1, fdPass = -1;
-        std::atomic_int fdSaRefs, fdPassRefs;
+		int saUnitNumber;
+
+		const char *devSa, *devSaCtl, *devPass;
+        int fdSa = -1, fdSaCtl = -1, fdPass = -1;
+        std::atomic_int fdSaRefs, fdSaCtlRefs, fdPassRefs;
 
 		size_t maxBlockSz;
 
 
-		void _determineMaxIOSize();
+		void _determineUnitNumber();
+		void _createCtrlDevice();
+		void _getMaxIOSize();
+
 		void _openSa();
+		void _openSaCtl();
 		void _closeSa();
+		void _closeSaCtl();
 
 		iolib_drive_operation_t _mtioToNativeStatus(short);
 };

@@ -3,6 +3,7 @@
 #include <sys/mtio.h>
 #include <sys/ioctl.h>
 #include <sys/sysctl.h>
+#include <unistd.h>
 
 #include "Drive.hpp"
 
@@ -17,8 +18,12 @@ Drive::Drive(const char *sa, const char *pass) {
     this->devSa = sa;
     this->devPass = pass;
 
+    // Determine unit number and control device
+    _determineUnitNumber();
+    _createCtrlDevice();
+
     // Determine maximum IO size (for writes/reads)
-    _determineMaxIOSize();
+    _getMaxIOSize();
 }
 
 /**
@@ -40,7 +45,7 @@ iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {
     int err = 0;
 
     // Ensure device is open
-    _openSa();
+    _openSaCtl();
 
     // Perform the ioctl
     struct mtget mtStatus;
@@ -54,7 +59,7 @@ iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {
     // NOTE: The rest of the fields in the struct are not yet implemented
 
     // Close device once we're done.
-    _closeSa();
+    _closeSaCtl();
 
     return err;
 
@@ -69,7 +74,7 @@ iolib_drive_operation_t Drive::getDriveOp() {
     int err = 0;
 
     // Ensure device is open
-    _openSa();
+    _openSaCtl();
 
     // Perform the ioctl
     struct mtget mtStatus;
@@ -80,7 +85,7 @@ iolib_drive_operation_t Drive::getDriveOp() {
     status = _mtioToNativeStatus(mtStatus.mt_dsreg);
 
     // Close device once we're done.
-    _closeSa();
+    _closeSaCtl();
 
     return status;
 }
@@ -95,14 +100,14 @@ off_t Drive::getLogicalBlkPos() {
     u_int32_t pos;
 
     // Ensure device is open
-    _openSa();
+    _openSaCtl();
 
     // Perform the ioctl
     err = ioctl(this->fdSa, MTIOCRDSPOS, &pos);
     PCHECK(err != 0) << "Couldn't execute MTIOCRDSPOS on " << this->devSa;
 
     // Close device once we're done.
-    _closeSa();
+    _closeSaCtl();
 
     return pos;
 }
@@ -200,21 +205,69 @@ iolib_error_t Drive::writeFileMark() {
 
 
 /**
- * Determines the maximum IO size for this drive.
+ * Writes the specified data to the tape. If the write is larger than the
+ * maximum IO size permissible for this drive, it will be split into chunks
+ * of that size.
  */
-void Drive::_determineMaxIOSize() {
+size_t Drive::writeTape(void *buf, size_t len, iolib_error_t *outErr) {
+    int err = 0;
+
+    size_t totalBytesWritten = 0;
+    size_t lastWriteLen = 0;
+
+    // Ensure device is open
+    _openSa();
+
+    // Prepare for writing
+    uint8_t *writePtr = reinterpret_cast<uint8_t *>(buf);
+
+    while(totalBytesWritten < len) {
+        size_t bytesLeft = len - totalBytesWritten;
+
+        // Check if the number of bytes written is less than the chunk size.
+        if(bytesLeft < this->maxBlockSz) {
+            // If so, simply do a write of that remaining size.
+            lastWriteLen = write(this->fdSa, writePtr, bytesLeft);
+            PLOG_IF(ERROR, lastWriteLen == -1) << "Couldn't write to " << this->devSa;
+        }
+        // Otherwise, perform a write of the max IO size
+        else {
+            lastWriteLen = write(this->fdSa, writePtr, this->maxBlockSz);
+            PLOG_IF(ERROR, lastWriteLen == -1) << "Couldn't write to " << this->devSa;
+        }
+
+        // Update the counter and pointer following the write
+        writePtr += lastWriteLen;
+        totalBytesWritten += lastWriteLen;
+    }
+
+    // Close device once we're done.
+    _closeSa();
+    return totalBytesWritten;
+}
+
+
+/**
+ * Determines the unit number of this drive.
+ */
+void Drive::_determineUnitNumber() {
     // Extract the unit number from the device string
     std::string devSaStr(this->devSa);
 
     size_t last_index = devSaStr.find_last_not_of("0123456789");
     std::string unitNumberStr = devSaStr.substr(last_index + 1);
 
-    int unitNumber = stoi(unitNumberStr);
+    this->saUnitNumber = stoi(unitNumberStr);
+}
 
+/**
+ * Determines the maximum IO size for this drive.
+ */
+void Drive::_getMaxIOSize() {
     // Get the maximum block size for this device
     char sysCtlName[64];
     snprintf(reinterpret_cast<char *>(&sysCtlName), 64,
-             "kern.cam.sa.%d.maxio", unitNumber);
+             "kern.cam.sa.%d.maxio", this->saUnitNumber);
 
     int maxIO;
     size_t maxIOLen = sizeof(int);
@@ -223,6 +276,17 @@ void Drive::_determineMaxIOSize() {
     this->maxBlockSz = maxIO;
 
     LOG(INFO) << "\t\tMaximum IO size: " << this->maxBlockSz << " bytes";
+}
+
+/**
+ * Creates the path to the drive's control device.
+ */
+void Drive::_createCtrlDevice() {
+    char *buffer = new char[128];
+    snprintf(buffer, 128, "/dev/sa%d.ctl", this->saUnitNumber);
+    this->devSaCtl = buffer;
+
+    LOG(INFO) << "\t\tControl device: " << this->devSaCtl;
 }
 
 /**
@@ -244,6 +308,18 @@ void Drive::_openSa() {
     }
 }
 
+void Drive::_openSaCtl() {
+   // Only open the device if it's not already open
+   if(this->fdSaCtl == -1) {
+       this->fdSaCtl = open(this->devSaCtl, O_RDWR | O_EXLOCK);
+       PCHECK(this->fdSaCtl != -1) << "Couldn't open " << this->devSaCtl << ": ";
+
+       this->fdSaCtlRefs++;
+   } else {
+       this->fdSaCtlRefs++;
+   }
+}
+
 /**
  * Closes the sequential access device, if opened.
  *
@@ -263,6 +339,20 @@ void Drive::_closeSa() {
 
         this->fdSa = -1;
     }
+}
+
+void Drive::_closeSaCtl() {
+   int err = 0;
+
+   if(this->fdSaCtl != -1 && --this->fdSaCtlRefs == 0) {
+       err = close(this->fdSaCtl);
+
+       if(err != 0) {
+           PLOG(ERROR) << "Couldn't close " << this->devSaCtl << ": ";
+       }
+
+       this->fdSaCtl = -1;
+   }
 }
 
 
