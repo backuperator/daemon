@@ -109,8 +109,7 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
 IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive_status_t *outStatus) {
     GET_CLASS(Drive, drive);
 
-    // TODO: Implement
-    return -1;
+    return drive->getDriveStatus(outStatus);
 }
 
 /**
@@ -119,19 +118,17 @@ IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive
 IOLIB_EXPORT off_t iolibDriveGetPosition(iolib_drive_t _drive, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->getLogicalBlkPos();
 }
 
 /**
  * Seeks the drive to the specified logical block position. The drive must NOT
  * be pre-occupied performing any other operation.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, size_t block) {
+IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, off_t block) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->seekToLogicalBlkPos(block);
 }
 
 /**
@@ -151,8 +148,7 @@ IOLIB_EXPORT iolib_drive_operation_t iolibDriveGetCurrentOperation(iolib_drive_t
 IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->rewind();
 }
 
 /**

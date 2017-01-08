@@ -15,7 +15,13 @@ class Drive {
 		Drive(const char *, const char *);
 		~Drive();
 
+		iolib_error_t getDriveStatus(iolib_drive_status_t *);
 		iolib_drive_operation_t getDriveOp();
+
+		off_t getLogicalBlkPos();
+		iolib_error_t seekToLogicalBlkPos(off_t);
+
+		iolib_error_t rewind();
 
 	private:
 		const char *devSa, *devPass;

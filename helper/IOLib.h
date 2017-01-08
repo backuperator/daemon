@@ -105,7 +105,7 @@ IOLIB_EXTERN _iolib_drive_get_position_t iolibDriveGetPosition;
  * Seeks the drive to the specified logical block position. The drive must NOT
  * be pre-occupied performing any other operation.
  */
-typedef iolib_error_t (*_iolib_drive_set_position_t)(iolib_drive_t, size_t);
+typedef iolib_error_t (*_iolib_drive_set_position_t)(iolib_drive_t, off_t);
 IOLIB_EXTERN _iolib_drive_set_position_t iolibDriveSeekToPosition;
 
 /**

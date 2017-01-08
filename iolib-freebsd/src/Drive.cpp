@@ -30,6 +30,33 @@ Drive::~Drive() {
 
 
 /**
+ * Gets status information from the drive.
+ */
+iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {
+    int err = 0;
+
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    struct mtget mtStatus;
+    err = ioctl(this->fdSa, MTIOCGET, &mtStatus);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->devSa;
+
+    // Extract the status and convert it to our value
+    status->deviceStatus = _mtioToNativeStatus(mtStatus.mt_dsreg);
+    status->deviceError = mtStatus.mt_erreg;
+
+    // NOTE: The rest of the fields in the struct are not yet implemented
+
+    // Close device once we're done.
+    _closeSa();
+
+    return err;
+
+}
+
+/**
  * Queries the drive with a GET UNIT STATUS command to determine its current
  * state, using the MTIOCGET ioctl.
  */
@@ -52,6 +79,70 @@ iolib_drive_operation_t Drive::getDriveOp() {
     _closeSa();
 
     return status;
+}
+
+/**
+ * Gets the drive's current logical block position.
+ *
+ * NOTE: This may be inaccurate (or entirely wrong) if the drive is not idle.
+ */
+off_t Drive::getLogicalBlkPos() {
+    int err = 0;
+    u_int32_t pos;
+
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    err = ioctl(this->fdSa, MTIOCRDSPOS, &pos);
+    PCHECK(err != 0) << "Couldn't execute MTIOCRDSPOS on " << this->devSa;
+
+    // Close device once we're done.
+    _closeSa();
+
+    return pos;
+}
+
+/**
+ * Seeks the drive to the given logical block position.
+ */
+iolib_error_t Drive::seekToLogicalBlkPos(off_t inPos) {
+    int err = 0;
+    u_int32_t pos = inPos;
+
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    err = ioctl(this->fdSa, MTIOCSLOCATE, &pos);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCSLOCATE on " << this->devSa;
+
+    // Close device once we're done.
+    _closeSa();
+    return err;
+}
+
+/**
+ * Rewinds the tape to the beginning.
+ */
+iolib_error_t Drive::rewind() {
+    int err = 0;
+
+    // Ensure device is open
+    _openSa();
+
+    // Perform the ioctl
+    struct mtop mt_com;
+
+    mt_com.mt_count = 1;
+    mt_com.mt_op = MTREW;
+
+    err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTREW on " << this->devSa;
+
+    // Close device once we're done.
+    _closeSa();
+    return err;
 }
 
 

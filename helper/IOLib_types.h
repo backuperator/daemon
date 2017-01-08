@@ -105,7 +105,7 @@ typedef enum {
  */
 typedef struct {
     // Device status register
-    uint16_t deviceStatus;
+    iolib_drive_operation_t deviceStatus;
     // Error register
     uint16_t deviceError;
 
