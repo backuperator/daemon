@@ -79,16 +79,15 @@ IOLIB_EXPORT void iolibStringFree(iolib_string_t string) {
  * that were found in the system. If an error occurs, -1 is returned, and the
  * error value is written in the optional int pointer.
  */
-IOLIB_EXPORT int iolibEnumerateDevices(iolib_library_t *lib, int max, iolib_error_t *outErr) {
-    // TODO: Implement this
-    return -1;
+IOLIB_EXPORT int iolibEnumerateDevices(iolib_library_t *lib, size_t max, iolib_error_t *outErr) {
+    return _ioLibShared->enumerateLibraries(lib, max);
 }
 
 /**
  * Frees all library structures previously inserted into the specified array.
  */
-IOLIB_EXPORT void iolibEnumerateDevicesFree(iolib_library_t *lib, int num) {
-    // TODO: implement
+IOLIB_EXPORT void iolibEnumerateDevicesFree(iolib_library_t *lib, size_t num) {
+    // This doesn't do anything, since we didn't allocate any memory.
 }
 
 //////////////////////////////// Drive Handling ////////////////////////////////

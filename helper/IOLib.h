@@ -72,13 +72,13 @@ IOLIB_EXTERN _iolib_string_free_t iolibStringFree;
  * that were found in the system. If an error occurs, -1 is returned, and the
  * error value is written in the optional int pointer.
  */
-typedef int (*_iolib_enumerate_devices_t)(iolib_library_t *, int, iolib_error_t *);
+typedef int (*_iolib_enumerate_devices_t)(iolib_library_t *, size_t, iolib_error_t *);
 IOLIB_EXTERN _iolib_enumerate_devices_t iolibEnumerateDevices;
 
 /**
  * Frees all library structures previously inserted into the specified array.
  */
-typedef void (*_iolib_enumerate_devices_free_t)(iolib_library_t *, int);
+typedef void (*_iolib_enumerate_devices_free_t)(iolib_library_t *, size_t);
 IOLIB_EXTERN _iolib_enumerate_devices_free_t iolibEnumerateDevicesFree;
 
 //////////////////////////////// Drive Handling ////////////////////////////////

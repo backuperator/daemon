@@ -29,11 +29,6 @@
  * Maximum number of loaders per library.
  */
 #define IOLIB_LIBRARY_MAX_LOADERS       4
-/**
- * Maximum number of storage elements per library. Note that each storage
- * element usually corresponds to a magazine, and holds a number of tapes.
- */
-#define IOLIB_LIBRARY_MAX_ELEMENTS      8
 
 /////////////////////////////// Type Definitions ///////////////////////////////
 /**
@@ -217,17 +212,12 @@ typedef struct {
     // Number of tape drives in this library
     size_t numDrives;
     // Pointer to drive objects
-    iolib_drive_t* drives[IOLIB_LIBRARY_MAX_DRIVES];
+    iolib_drive_t drives[IOLIB_LIBRARY_MAX_DRIVES];
 
     // Number of loaders in the drive
     size_t numLoaders;
     // Pointer to loader objects
-    iolib_loader_t* loaders[IOLIB_LIBRARY_MAX_LOADERS];
-
-    // Number of storage elements
-    size_t numStorageElements;
-    // Pointer to storage element objects
-    iolib_storage_element_t *elements[IOLIB_LIBRARY_MAX_ELEMENTS];
+    iolib_loader_t loaders[IOLIB_LIBRARY_MAX_LOADERS];
 } iolib_library_t;
 
 #endif

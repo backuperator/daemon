@@ -40,6 +40,43 @@ BSDIOLib::~BSDIOLib() {
 }
 
 /**
+ * Enumerates the libraries, converting them into the shared iolib type that
+ * contains references to the drives and loaders in it.
+ */
+int BSDIOLib::enumerateLibraries(iolib_library_t *libOut, size_t max) {
+    size_t librariesOutput = 0;
+    int i = 0;
+
+    // Iterate over all of the libraries
+    for(auto it = this->libraries.begin(); it < this->libraries.end(); it++) {
+        // Check if we've filled the buffer
+        if(librariesOutput > max) {
+            return max;
+        }
+
+        // If not, fill this structure.
+        libOut[librariesOutput].numDrives = it->drives.size();
+        i = 0;
+        for(auto it2 = *it->drives.begin(); it2 <  *it->drives.end(); it2++) {
+            libOut[librariesOutput].drives[i++] = reinterpret_cast<iolib_drive_t>(it2);
+        }
+
+        libOut[librariesOutput].numLoaders = it->loaders.size();
+        i = 0;
+        for(auto it2 = *it->loaders.begin(); it2 <  *it->loaders.end(); it2++) {
+            libOut[librariesOutput].loaders[i++] = reinterpret_cast<iolib_loader_t>(it2);
+        }
+
+        // When done, increment the counter.
+        librariesOutput++;
+    }
+
+    // Return the number of libraries we output.
+    return librariesOutput;
+}
+
+
+/**
  * Parses the config file into library structs.
  *
  * TODO: Actually read from a config file…
