@@ -45,7 +45,7 @@ Loader::~Loader() {
 size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {
     if(type == kStorageElementTransport) { // Transport element (picker)
         return this->numPickers;
-    } else if(type == kStorageElemenetSlot) { // Storage element (slot)
+    } else if(type == kStorageElementSlot) { // Storage element (slot)
         return this->numSlots;
     } else if(type == kStorageElementPortal) { // Portal
         return this->numPortals;
@@ -224,7 +224,7 @@ void Loader::_fetchInventory() {
         CHET_MT, CHET_ST, CHET_IE, CHET_DT
     };
     static const iolib_storage_element_type_t nativeType[] = {
-        kStorageElementTransport, kStorageElemenetSlot,
+        kStorageElementTransport, kStorageElementSlot,
         kStorageElementPortal, kStorageElementDrive
     };
     size_t elementsForType[] = {
@@ -278,7 +278,7 @@ void Loader::_fetchInventory() {
 u_int Loader::_convertToChType(iolib_storage_element_type_t type) {
     if(type == kStorageElementTransport) { // Transport element (picker)
         return CHET_MT;
-    } else if(type == kStorageElemenetSlot) { // Storage element (slot)
+    } else if(type == kStorageElementSlot) { // Storage element (slot)
         return CHET_ST;
     } else if(type == kStorageElementPortal) { // Portal
         return CHET_IE;

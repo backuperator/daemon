@@ -132,16 +132,16 @@ typedef void* iolib_storage_element_t;
  */
 typedef enum {
 	// Medium transport element (picker)
-	kStorageElementTransport = (1 << 1),
+	kStorageElementTransport = (1 << 0),
 	// Storage element (slot)
-	kStorageElemenetSlot = (1 << 2),
+	kStorageElementSlot = (1 << 1),
 	// Import/export element (portal) - mailslots fall in this category
-	kStorageElementPortal = (1 << 3),
+	kStorageElementPortal = (1 << 2),
 	// Data transfer element (drive)
-	kStorageElementDrive = (1 << 4),
+	kStorageElementDrive = (1 << 3),
 
 	// Any type of storage element
-	kStorageElementAny = (kStorageElementTransport | kStorageElemenetSlot |
+	kStorageElementAny = (kStorageElementTransport | kStorageElementSlot |
 						  kStorageElementPortal | kStorageElementDrive)
 } iolib_storage_element_type_t;
 
@@ -153,13 +153,13 @@ typedef enum {
     kStorageElementNoFlags = 0,
 
 	/// The element contains a tape.
-	kStorageElementFull = (1 << 1),
+	kStorageElementFull = (1 << 0),
 	/// The medium was inserted by the operator (i.e. mailslot)
-	kStorageElementPlacedByOperator = (1 << 2),
+	kStorageElementPlacedByOperator = (1 << 1),
 	/// The barcode on the medium could not be read.
-	kStorageElementInvalidLabel = (1 << 3),
+	kStorageElementInvalidLabel = (1 << 2),
 	/// Medium can be accessed by the picker
-	kStorageElementAccessible = (1 << 4),
+	kStorageElementAccessible = (1 << 3),
 
 	/// Element supports medium exporting
 	kStorageElementSupportsExport = (1 << 8),
@@ -174,14 +174,6 @@ inline iolib_storage_element_flags_t operator|(iolib_storage_element_flags_t a, 
 inline iolib_storage_element_flags_t operator&(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
     return static_cast<iolib_storage_element_flags_t>(static_cast<int>(a) & static_cast<int>(b));
 }
-
-inline iolib_storage_element_flags_t operator|=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
-    return a | b;
-}
-inline iolib_storage_element_flags_t operator&=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
-    return a & b;
-}
-
 #endif
 
 /**
@@ -205,9 +197,9 @@ inline iolib_storage_element_flags_t operator&=(iolib_storage_element_flags_t a,
  */
 typedef struct {
     // A descriptive name for the library, if available
-    const iolib_string_t name;
+    iolib_string_t name;
     // Location of this library, such as "SCSI0:2" or "SAS500277a4100c4e21"
-    const iolib_string_t location;
+    iolib_string_t location;
 
     // Number of tape drives in this library
     size_t numDrives;

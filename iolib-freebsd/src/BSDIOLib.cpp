@@ -54,17 +54,18 @@ int BSDIOLib::enumerateLibraries(iolib_library_t *libOut, size_t max) {
             return max;
         }
 
-        // If not, fill this structure.
+        memset(&libOut[librariesOutput], 0, sizeof(iolib_library_t));
+
+        // Copy drives
         libOut[librariesOutput].numDrives = it->drives.size();
-        i = 0;
-        for(auto it2 = *it->drives.begin(); it2 <  *it->drives.end(); it2++) {
-            libOut[librariesOutput].drives[i++] = reinterpret_cast<iolib_drive_t>(it2);
+        for(int j = 0; j < it->drives.size(); j++) {
+            libOut[librariesOutput].drives[j] = reinterpret_cast<iolib_drive_t>(it->drives.at(j));
         }
 
+        // Copy loaders
         libOut[librariesOutput].numLoaders = it->loaders.size();
-        i = 0;
-        for(auto it2 = *it->loaders.begin(); it2 <  *it->loaders.end(); it2++) {
-            libOut[librariesOutput].loaders[i++] = reinterpret_cast<iolib_loader_t>(it2);
+        for(int j = 0; j < it->loaders.size(); j++) {
+            libOut[librariesOutput].loaders[j] = reinterpret_cast<iolib_loader_t>(it->loaders.at(j));
         }
 
         // When done, increment the counter.
