@@ -49,18 +49,18 @@ typedef int iolib_error_t;
  * to indicate that they belong to the IOLib, and must be freed when the caller
  * is done using them.
  */
-typedef char* iolib_string_t;
+typedef char *iolib_string_t;
 
 /**
  * Opaque type for a session.
  */
-typedef void* iolib_session_t;
+typedef void *iolib_session_t;
 
 /**
  * Type for the opaque pointer to a drive object. The object should only be
  * manipulated through methods in the IOLib.
  */
-typedef void* iolib_drive_t;
+typedef void *iolib_drive_t;
 
 /**
  * A list of several operations that a tape drive could be performing at a given
@@ -152,13 +152,13 @@ typedef enum {
  */
 typedef enum {
 	/// The element contains a tape.
-	kStorageElementFull = (1 << 1),
+	kStorageElementFull = (1 << 0),
 	/// The medium was inserted by the operator (i.e. mailslot)
-	kStorageElementPlacedByOperator = (1 << 2),
+	kStorageElementPlacedByOperator = (1 << 1),
 	/// The barcode on the medium could not be read.
-	kStorageElementInvalidLabel = (1 << 3),
+	kStorageElementInvalidLabel = (1 << 2),
 	/// Medium can be accessed by the picker
-	kStorageElementAccessible = (1 << 4),
+	kStorageElementAccessible = (1 << 3),
 
 	/// Element supports medium exporting
 	kStorageElementSupportsExport = (1 << 8),
