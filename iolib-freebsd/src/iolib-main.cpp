@@ -1,4 +1,4 @@
-#include <IOLib_Types.h>
+#include <IOLib_types.h>
 #include <IOLib_lib.h>
 
 #include <glog/logging.h>
