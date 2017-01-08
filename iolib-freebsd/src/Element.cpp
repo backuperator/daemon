@@ -13,10 +13,12 @@ namespace iolibbsd {
  * NOTE: We don't copy the structure, or reference it after this constructor has
  * completed, since it's assumed it's part of a shared buffer.
  */
-Element::Element(Loader *loader, struct changer_element_status *chElement) {
+Element::Element(Loader *loader, iolib_storage_element_type_t type,
+                 struct changer_element_status *chElement) {
     this->parent = loader;
 
     // Parse the changer element structure
+    this->type = type;
     this->address = chElement->ces_addr;
     this->volTag = _stringFromChVolTag(chElement->ces_pvoltag);
 

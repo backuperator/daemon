@@ -54,6 +54,39 @@ size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {
     return -1;
 }
 
+/**
+ * Moves the element from `source` to `dest`. This assumes that dest is empty;
+ * if it isn't, the results are undefined, and Bad Things may happen.
+ */
+iolib_error_t Loader::moveElement(Element *src, Element *dest) {
+    int err = 0;
+
+    // Check that these are our elements
+    CHECK(src->parent == this) << "Source element is not from this loader";
+    CHECK(dest->parent == this) << "Destination element is not from this loader";
+
+    // Ensure driver is open
+    _openCh();
+
+    // Prepare the move struct
+    struct changer_move move;
+
+    move.cm_fromtype = _convertToChType(src->getType());
+    move.cm_fromunit = src->getAddress();
+    move.cm_totype = _convertToChType(dest->getType());
+    move.cm_tounit = src->getAddress();
+
+    // Run the ioctl
+    err = ioctl(this->fdCh, CHIOMOVE, &move);
+    LOG_IF(ERROR, err != 0) << "Couldn't execute CHIOMOVE on " << this->devCh
+                            << ": " << errno;
+
+    // Close driver
+    _closeCh();
+
+    return err;
+}
+
 
 /**
  * Sends the SCSI INITIALIZE ELEMENT STATUS command, to force the drive to re-
@@ -159,6 +192,10 @@ void Loader::_fetchInventory() {
     static const u_int types[] = {
         CHET_MT, CHET_ST, CHET_IE, CHET_DT
     };
+    static const iolib_storage_element_type_t nativeType[] = {
+        kStorageElementTransport, kStorageElemenetSlot,
+        kStorageElementPortal, kStorageElementDrive
+    };
     size_t elementsForType[] = {
         this->numPickers, this->numSlots, this->numPortals, this->numDrives
     };
@@ -192,7 +229,7 @@ void Loader::_fetchInventory() {
 
         // Create a class for each storage element we've found.
         for(size_t j = 0; j < request.cesr_element_count; j++) {
-            Element el(this, &elementStat[j]);
+            Element el(this, nativeType[i], &elementStat[j]);
             this->elements.push_back(el);
         }
     }
@@ -201,6 +238,25 @@ void Loader::_fetchInventory() {
     delete[] elementStat;
 
     _closeCh();
+}
+
+
+/**
+ * Converts our internal type to that used by the ch driver.
+ */
+u_int Loader::_convertToChType(iolib_storage_element_type_t type) {
+    if(type == kStorageElementTransport) { // Transport element (picker)
+        return CHET_MT;
+    } else if(type == kStorageElemenetSlot) { // Storage element (slot)
+        return CHET_ST;
+    } else if(type == kStorageElementPortal) { // Portal
+        return CHET_IE;
+    } else if(type == kStorageElementDrive) { // Data transfer element (drive)
+        return CHET_DT;
+    }
+
+    // we should not get down here
+    return -1;
 }
 
 } // namespace iolibbsd

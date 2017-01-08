@@ -25,6 +25,7 @@ class Loader {
         size_t getNumElementsForType(iolib_storage_element_type_t);
 
         iolib_error_t performInventory();
+        iolib_error_t moveElement(Element *, Element *);
 
     private:
         const char *devCh, *devPass;
@@ -32,7 +33,7 @@ class Loader {
         std::atomic_int fdChRefs, fdPassRefs;
 
         // Timeout for the INITIALIZE ELEMENT STATUS command, in seconds
-        const uint32_t inventoryTimeout = 30; 
+        const uint32_t inventoryTimeout = 30;
 
         // This is information about the loader
         size_t numPickers, numSlots, numPortals, numDrives;
@@ -44,6 +45,8 @@ class Loader {
 
         void _fetchLoaderParams();
         void _fetchInventory();
+
+        u_int _convertToChType(iolib_storage_element_type_t);
 };
 
 } // namespace iolibbsd

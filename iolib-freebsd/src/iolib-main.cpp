@@ -300,8 +300,7 @@ IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t _loader,
     GET_CLASS(Element, src);
     GET_CLASS(Element, dest);
 
-    // TODO: implement
-    return -1;
+    return loader->moveElement(src, dest);
 }
 
 /**
@@ -316,6 +315,8 @@ IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t _loader,
     GET_CLASS(Loader, loader);
     GET_CLASS(Element, src);
     GET_CLASS(Element, dest);
+
+    LOG(FATAL) << "iolibLoaderExchange not implemented";
 
     // TODO: implement
     return -1;
