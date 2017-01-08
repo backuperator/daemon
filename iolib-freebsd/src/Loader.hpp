@@ -8,6 +8,13 @@
 #ifndef LOADER_HPP
 #define LOADER_HPP
 
+#include <vector>
+#include <atomic>
+
+#include <fcntl.h>
+
+#include "Element.hpp"
+
 namespace iolibbsd {
 
 class Loader {
@@ -17,8 +24,21 @@ class Loader {
 
     private:
         const char *devCh, *devPass;
+        int fdCh = -1, fdPass = -1;
+        std::atomic_int fdChRefs, fdPassRefs;
+
+        // This is information about the loader
+        size_t numPickers, numSlots, numPortals, numDrives;
+
+        std::vector<Element> elements;
+
+        void _openCh();
+        void _closeCh();
+
+        void _fetchLoaderParams();
+        void _fetchInventory();
 };
 
-} // namespace iolibbsd;
+} // namespace iolibbsd
 
 #endif

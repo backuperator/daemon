@@ -25,7 +25,18 @@ BSDIOLib::BSDIOLib() {
  * also closing any open file descriptors.
  */
 BSDIOLib::~BSDIOLib() {
-
+    // Delete drives and loaders
+    for(auto it = this->libraries.begin();
+             it < this->libraries.end(); it++) {
+        // delete drives
+        for(auto it2 = *it->drives.begin(); it2 <  *it->drives.end(); it2++) {
+            delete it2;
+        }
+        // delete loaders
+        for(auto it2 = *it->loaders.begin(); it2 <  *it->loaders.end(); it2++) {
+            delete it2;
+        }
+    }
 }
 
 /**
@@ -80,7 +91,7 @@ void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
     for(size_t i = 0; i < lib.numDrives; i++) {
         LOG(INFO) << "\tDrive " << i << ": " << lib.drives[i].blockDev;
 
-        Drive drive(lib.drives[i].blockDev, lib.drives[i].passDev);
+        Drive *drive = new Drive(lib.drives[i].blockDev, lib.drives[i].passDev);
         library.drives.push_back(drive);
     }
 
@@ -88,7 +99,7 @@ void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
     for(size_t i = 0; i < lib.numLoaders; i++) {
         LOG(INFO) << "\tLoader " << i << ": " << lib.loaders[i].changerDev;
 
-        Loader loader(lib.loaders[i].changerDev, lib.loaders[i].passDev);
+        Loader *loader = new Loader(lib.loaders[i].changerDev, lib.loaders[i].passDev);
         library.loaders.push_back(loader);
     }
 

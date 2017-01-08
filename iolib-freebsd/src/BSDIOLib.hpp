@@ -40,8 +40,8 @@ typedef struct {
 } iolib_config_library_t;
 
 typedef struct {
-	std::vector<Drive> drives;
-	std::vector<Loader> loaders;
+	std::vector<Drive *> drives;
+	std::vector<Loader *> loaders;
 } library_t;
 
 

@@ -1,5 +1,7 @@
 #include <glog/logging.h>
 
+#include <sys/mtio.h>
+
 #include "Drive.hpp"
 
 namespace iolibbsd {
