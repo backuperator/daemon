@@ -331,7 +331,7 @@ void Drive::_getMaxIOSize() {
 
     this->maxBlockSz = maxIO;
 
-    LOG(INFO) << "\t\tMaximum IO size: " << this->maxBlockSz << " bytes";
+    VLOG(2) << "\t\tMaximum IO size: " << this->maxBlockSz << " bytes";
 }
 
 /**
@@ -342,7 +342,7 @@ void Drive::_createCtrlDevice() {
     snprintf(buffer, 128, "/dev/sa%d.ctl", this->saUnitNumber);
     this->devSaCtl = buffer;
 
-    LOG(INFO) << "\t\tControl device: " << this->devSaCtl;
+    VLOG(2) << "\t\tControl device: " << this->devSaCtl;
 }
 
 /**

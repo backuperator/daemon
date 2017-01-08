@@ -119,14 +119,14 @@ void BSDIOLib::_parseConfigFile() {
  */
 void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
     // Print some info…
-    LOG(INFO) << "Processing library with " << lib.numDrives << " drives, "
-              << lib.numLoaders << " loaders:";
+    VLOG(1) << "Processing library with " << lib.numDrives << " drives, "
+            << lib.numLoaders << " loaders";
 
     library_t library;
 
     // First, process the drives
     for(size_t i = 0; i < lib.numDrives; i++) {
-        LOG(INFO) << "\tDrive " << i << ": " << lib.drives[i].blockDev;
+        VLOG(1) << "\tDrive " << i << ": " << lib.drives[i].blockDev;
 
         Drive *drive = new Drive(lib.drives[i].blockDev, lib.drives[i].passDev);
         library.drives.push_back(drive);
@@ -134,7 +134,7 @@ void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
 
     // Then, process the loaders
     for(size_t i = 0; i < lib.numLoaders; i++) {
-        LOG(INFO) << "\tLoader " << i << ": " << lib.loaders[i].changerDev;
+        VLOG(1) << "\tLoader " << i << ": " << lib.loaders[i].changerDev;
 
         Loader *loader = new Loader(lib.loaders[i].changerDev, lib.loaders[i].passDev);
         library.loaders.push_back(loader);
