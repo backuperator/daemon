@@ -15,6 +15,7 @@ using random_bytes_engine = std::independent_bits_engine<
 // Maximum space of elements for which to reserve space
 #define MAX_ELEMENTS 128
 
+static void WriteBufferToFile(void *buf, size_t len, const char *name);
 static iolib_storage_element_t GetSlotAtIndex(iolib_loader_t loader, off_t index);
 static iolib_storage_element_t GetDriveAtIndex(iolib_loader_t loader, off_t index);
 static iolib_storage_element_t GetElementAtIndex(iolib_loader_t loader, off_t index, iolib_storage_element_type_t type);
@@ -139,17 +140,23 @@ int main(int argc, char *argv[]) {
 		size_t firstBufSz = (1024 * 1024 * 128) + (1024 * 512);
 		size_t secondBufSz = (1024 * 1024 * 50) + (1024 * 332) + 8;
 
-		std::vector<char> firstBuf(firstBufSz);
-		std::generate(begin(firstBuf), end(firstBuf), std::ref(rbe));
-		uint32_t firstCrc = crc32c(0, firstBuf.data(), firstBufSz);
+		char *firstBuf = new char[firstBufSz];
+		for(size_t i = 0; i < firstBufSz; i++) {
+			firstBuf[i] = arc4random() % 255;
+		}
+		uint32_t firstCrc = crc32c(0, firstBuf, firstBufSz);
 
+		WriteBufferToFile(firstBuf, firstBufSz, "buf1_wr.bin");
 		LOG(INFO) << "Generated " << firstBufSz << " bytes of random; CRC = 0x"
 				  << hex << firstCrc << dec;
 
-		std::vector<char> secondBuf(secondBufSz);
-		std::generate(begin(secondBuf), end(secondBuf), std::ref(rbe));
-		uint32_t secondCrc = crc32c(0, secondBuf.data(), secondBufSz);
+		char *secondBuf = new char[firstBufSz];
+		for(size_t i = 0; i < firstBufSz; i++) {
+			secondBuf[i] = arc4random() % 255;
+		}
+		uint32_t secondCrc = crc32c(0, secondBuf, secondBufSz);
 
+		WriteBufferToFile(secondBuf, secondBufSz, "buf2_wr.bin");
 		LOG(INFO) << "Generated " << secondBufSz << " bytes of random; CRC = 0x"
 				  << hex << secondCrc << dec;
 
@@ -157,7 +164,7 @@ int main(int argc, char *argv[]) {
 
 		// Write the first buffer.
 		LOG(INFO) << "Writing first buffer...";
-		bytesWritten = iolibDriveWrite(drive, firstBuf.data(), firstBufSz, true, NULL);
+		bytesWritten = iolibDriveWrite(drive, firstBuf, firstBufSz, true, NULL);
 		LOG(INFO) << "\tWrote " << bytesWritten << " bytes, expected " << firstBufSz;
 
 		pos = iolibDriveGetPosition(drive, NULL);
@@ -166,7 +173,7 @@ int main(int argc, char *argv[]) {
 
 		// Write the second buffer
 		LOG(INFO) << "Writing second buffer...";
-		bytesWritten = iolibDriveWrite(drive, secondBuf.data(), secondBufSz, true, NULL);
+		bytesWritten = iolibDriveWrite(drive, secondBuf, secondBufSz, true, NULL);
 		LOG(INFO) << "\tWrote " << bytesWritten << " bytes, expected " << secondBufSz;
 
 		pos = iolibDriveGetPosition(drive, NULL);
@@ -178,8 +185,8 @@ int main(int argc, char *argv[]) {
 		iolibDriveRewind(drive);
 
 		// Clear the buffers before reading into them.
-		memset(firstBuf.data(), 0, firstBufSz);
-		memset(secondBuf.data(), 0, secondBufSz);
+		memset(firstBuf, 0, firstBufSz);
+		memset(secondBuf, 0, secondBufSz);
 
 		LOG(INFO) << "### Reading buffers";
 
@@ -188,7 +195,8 @@ int main(int argc, char *argv[]) {
 		LOG(INFO) << "Drive starting at block " << pos;
 
 		LOG(INFO) << "Reading first buffer...";
-		bytesRead = iolibDriveRead(drive, firstBuf.data(), firstBufSz, NULL);
+		bytesRead = iolibDriveRead(drive, firstBuf, firstBufSz, NULL);
+		WriteBufferToFile(firstBuf, firstBufSz, "buf1_rd.bin");
 		LOG(INFO) << "\tRead " << bytesRead << " bytes, expected " << firstBufSz;
 
 		// Since this is an exact read, skip the file mark.
@@ -199,7 +207,8 @@ int main(int argc, char *argv[]) {
 
 		// Now, read the second block
 		LOG(INFO) << "Reading second buffer...";
-		bytesRead = iolibDriveRead(drive, secondBuf.data(), secondBufSz, NULL);
+		bytesRead = iolibDriveRead(drive, secondBuf, secondBufSz, NULL);
+		WriteBufferToFile(secondBuf, secondBufSz, "buf2_rd.bin");
 		LOG(INFO) << "\tRead " << bytesRead << " bytes, expected " << secondBufSz;
 
 		pos = iolibDriveGetPosition(drive, NULL);
@@ -209,7 +218,7 @@ int main(int argc, char *argv[]) {
 		// Calculate the CRC of both blocks
 		LOG(INFO) << "### Calculating CRC of read buffers";
 		LOG(INFO) << "Calculating CRC of first block";
-		uint32_t firstCrcRead = crc32c(0, firstBuf.data(), firstBufSz);
+		uint32_t firstCrcRead = crc32c(0, firstBuf, firstBufSz);
 
 		if(firstCrcRead != firstCrc) {
 			LOG(ERROR) << "\tCRC MISMATCH ON FIRST BLOCK! "
@@ -221,7 +230,7 @@ int main(int argc, char *argv[]) {
 
 		// Check the second block's CRC
 		LOG(INFO) << "Calculating CRC of second block";
-		uint32_t secondCrcRead = crc32c(0, secondBuf.data(), secondBufSz);
+		uint32_t secondCrcRead = crc32c(0, secondBuf, secondBufSz);
 
 		if(secondCrcRead != secondCrc) {
 			LOG(ERROR) << "\tCRC MISMATCH ON SECOND BLOCK! "
@@ -253,6 +262,18 @@ int main(int argc, char *argv[]) {
 	}
 
     return 0;
+}
+
+static void WriteBufferToFile(void *buf, size_t len, const char *name) {
+	// Open file
+	FILE *fp = fopen(name, "w+");
+	PCHECK(fp != NULL) << "Couldn't open " << name << " for writing";
+
+	// Write
+	fwrite(buf, len, 1, fp);
+
+	// Close.
+	fclose(fp);
 }
 
 static iolib_storage_element_t GetSlotAtIndex(iolib_loader_t loader, off_t index) {

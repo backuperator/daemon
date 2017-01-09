@@ -39,6 +39,9 @@
  */
 typedef int iolib_error_t;
 
+/// Indicates that the end of the media has been reached.
+#define IOLIB_ERROR_EOM 	-90000
+
 /**
  * IOLib strings; these are really just char * pointers, but have a special type
  * to indicate that they belong to the IOLib, and must be freed when the caller

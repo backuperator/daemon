@@ -254,7 +254,7 @@ size_t Drive::writeTape(void *buf, size_t len, iolib_error_t *outErr) {
     int err = 0;
 
     size_t totalBytesWritten = 0;
-    size_t lastWriteLen = 0;
+    int lastWriteLen = 0;
 
     // Ensure device is open
     _openSa();
@@ -278,8 +278,15 @@ size_t Drive::writeTape(void *buf, size_t len, iolib_error_t *outErr) {
         }
 
         // Update the counter and pointer following the write
-        writePtr += lastWriteLen;
-        totalBytesWritten += lastWriteLen;
+        if(lastWriteLen >= 0) {
+            writePtr += lastWriteLen;
+            totalBytesWritten += lastWriteLen;
+        } else {
+            // If we're out of space, return a specific return code.
+            if(errno == ENOSPC) {
+                return IOLIB_ERROR_EOM;
+            }
+        }
     }
 
     // Close device once we're done.
@@ -295,7 +302,7 @@ size_t Drive::readTape(void *buf, size_t len, iolib_error_t *outErr) {
     int err = 0;
 
     size_t totalBytesRead = 0;
-    size_t lastReadLen = 0;
+    int lastReadLen = 0;
 
     // Ensure device is open
     _openSa();
