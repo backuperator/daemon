@@ -25,6 +25,7 @@ class Drive {
 		iolib_error_t eject();
 
 		iolib_error_t writeFileMark();
+		iolib_error_t skipFileMark();
 
 		size_t writeTape(void *, size_t, iolib_error_t *);
 		size_t readTape(void *, size_t, iolib_error_t *);

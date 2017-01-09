@@ -107,7 +107,7 @@ iolib_error_t Loader::moveElement(Element *src, Element *dest) {
     move.cm_fromtype = _convertToChType(src->getType());
     move.cm_fromunit = src->getAddress();
     move.cm_totype = _convertToChType(dest->getType());
-    move.cm_tounit = src->getAddress();
+    move.cm_tounit = dest->getAddress();
 
     // Run the ioctl
     err = ioctl(this->fdCh, CHIOMOVE, &move);

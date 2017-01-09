@@ -123,6 +123,13 @@ typedef iolib_error_t (*_iolib_drive_rewind_t)(iolib_drive_t);
 IOLIB_EXTERN _iolib_drive_rewind_t iolibDriveRewind;
 
 /**
+ * Skips ahead one file. This can be used at the end of an exact size read to
+ * start the next read at the beginning of the next tape file.
+ */
+ typedef iolib_error_t (*_iolib_drive_skip_file_t)(iolib_drive_t);
+ IOLIB_EXTERN _iolib_drive_skip_file_t iolibDriveSkipFile;
+
+/**
  * Ejects the tape from the drive. Note that this call should only be used if
  * the drive is idle.
  */

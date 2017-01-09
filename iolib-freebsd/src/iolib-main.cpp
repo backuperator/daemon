@@ -151,6 +151,16 @@ IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t _drive) {
 }
 
 /**
+ * Skips ahead one file. This can be used at the end of an exact size read to
+ * start the next read at the beginning of the next tape file.
+ */
+IOLIB_EXPORT iolib_error_t iolibDriveSkipFile(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
+    return drive->skipFileMark();
+}
+
+/**
  * Ejects the tape from the drive. Note that this call should only be used if
  * the drive is idle.
  *

@@ -1,11 +1,25 @@
 #include "Logging.hpp"
 #include "IOLib.h"
+#include "crc32.h"
 
 #include <iostream>
+#include <random>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
+using random_bytes_engine = std::independent_bits_engine<
+    std::default_random_engine, CHAR_BIT, unsigned char>;
+
+// Maximum space of elements for which to reserve space
+#define MAX_ELEMENTS 128
+
+static iolib_storage_element_t GetSlotAtIndex(iolib_loader_t loader, off_t index);
+static iolib_storage_element_t GetDriveAtIndex(iolib_loader_t loader, off_t index);
+static iolib_storage_element_t GetElementAtIndex(iolib_loader_t loader, off_t index, iolib_storage_element_type_t type);
 static string ElementFlagsToString(iolib_storage_element_flags_t flags);
+static int ReadInt();
 
 /**
  * Daemon entry point
@@ -36,29 +50,21 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Prompt user to select a library
-	string input;
 	int selectedLib = 0;
 
 	while(true) {
-		cout << "Please enter the library to target: ";
-		getline(cin, input);
+		cout << "Which library should I use? ";
+		selectedLib = ReadInt();
 
-		// This code converts from string to number safely.
-		stringstream myStream(input);
-		if(myStream >> selectedLib) {
-			// ensure it's in bounds
-			if(selectedLib >= numLibs || selectedLib < 0) {
-				LOG(ERROR) << "Please enter a valid libary index from the list above.";
-				continue;
-			}
-
-			break;
+		if(selectedLib >= numLibs || selectedLib < 0) {
+			LOG(ERROR) << "Please enter a valid libary index from the list above.";
+			continue;
 		}
 
-		cout << "Invalid number, please try again" << endl;
+		break;
 	}
 
-	LOG(INFO) << "* * * Using library " << selectedLib;
+	LOG(INFO) << "* * * Using library " << selectedLib << " * * *";
 
 	// Print an inventory, if there's a loader
 	iolib_library_t lib = libs[selectedLib];
@@ -69,7 +75,7 @@ int main(int argc, char *argv[]) {
 		iolib_loader_t loader = lib.loaders[0];
 
 		// Specify some data
-		iolib_storage_element_t elements[32];
+		iolib_storage_element_t elements[MAX_ELEMENTS];
 		size_t numElementsInType = 0;
 
 		static const iolib_storage_element_type_t types[] = {
@@ -82,8 +88,8 @@ int main(int argc, char *argv[]) {
 
 		// List off all four types of elements
 		for(int i = 0; i < 4; i++) {
-			iolibLoaderGetElements(loader, types[i], (iolib_storage_element_t *) &elements, 32);
-			size_t numElementsInType = iolibLoaderGetNumElements(loader, types[i], NULL);
+			iolibLoaderGetElements(loader, types[i], (iolib_storage_element_t *) &elements, MAX_ELEMENTS);
+			numElementsInType = iolibLoaderGetNumElements(loader, types[i], NULL);
 
 			LOG(INFO) << "" << numElementsInType << " elements of type " << typesStrings[i];
 
@@ -97,7 +103,186 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	// Ask the user which tape shall be loaded
+	int selectedTape = 0;
+
+	cout << "* * * This step will destroy approximately the first gigabyte of "
+		 << "data on the selected tape. * * *\n"
+		 << "If you don't have an autoloader, enter 0. ";
+	cout << "Which tape should I write to? ";
+	selectedTape = ReadInt();
+
+	LOG(INFO) << "* * * Using tape " << selectedTape << " * * *";
+
+	if(lib.numLoaders > 0) {
+		LOG(INFO) << "### Loading tape from slot " << selectedTape << " to drive 0";
+
+		// If there's an autoloader, load the tape.
+		iolib_loader_t loader = lib.loaders[0];
+		iolib_storage_element_t element = GetSlotAtIndex(loader, selectedTape);
+		iolib_storage_element_t drive = GetDriveAtIndex(loader, 0);
+
+		iolibLoaderMove(loader, element, drive);
+	}
+
+	// ... do rw tests ...
+	if(lib.numDrives > 0) {
+		random_bytes_engine rbe;
+		iolib_drive_t drive = lib.drives[0];
+
+		size_t bytesWritten, bytesRead;
+		off_t pos;
+
+		LOG(INFO) << "### Generating random buffers...";
+
+		// Allocate two buffers, fill it with random data and calculate CRC
+		size_t firstBufSz = (1024 * 1024 * 128) + (1024 * 512);
+		size_t secondBufSz = (1024 * 1024 * 50) + (1024 * 332) + 8;
+
+		std::vector<char> firstBuf(firstBufSz);
+		std::generate(begin(firstBuf), end(firstBuf), std::ref(rbe));
+		uint32_t firstCrc = crc32c(0, firstBuf.data(), firstBufSz);
+
+		LOG(INFO) << "Generated " << firstBufSz << " bytes of random; CRC = 0x"
+				  << hex << firstCrc << dec;
+
+		std::vector<char> secondBuf(secondBufSz);
+		std::generate(begin(secondBuf), end(secondBuf), std::ref(rbe));
+		uint32_t secondCrc = crc32c(0, secondBuf.data(), secondBufSz);
+
+		LOG(INFO) << "Generated " << secondBufSz << " bytes of random; CRC = 0x"
+				  << hex << secondCrc << dec;
+
+		LOG(INFO) << "### Writing buffers";
+
+		// Write the first buffer.
+		LOG(INFO) << "Writing first buffer...";
+		bytesWritten = iolibDriveWrite(drive, firstBuf.data(), firstBufSz, true, NULL);
+		LOG(INFO) << "\tWrote " << bytesWritten << " bytes, expected " << firstBufSz;
+
+		pos = iolibDriveGetPosition(drive, NULL);
+		LOG(INFO) << "Drive ended at block " << pos;
+
+
+		// Write the second buffer
+		LOG(INFO) << "Writing second buffer...";
+		bytesWritten = iolibDriveWrite(drive, secondBuf.data(), secondBufSz, true, NULL);
+		LOG(INFO) << "\tWrote " << bytesWritten << " bytes, expected " << secondBufSz;
+
+		pos = iolibDriveGetPosition(drive, NULL);
+		LOG(INFO) << "Drive ended at block " << pos;
+
+
+		// Rewind tape before reading
+		LOG(INFO) << "### Rewinding tape to beginning...";
+		iolibDriveRewind(drive);
+
+		// Clear the buffers before reading into them.
+		memset(firstBuf.data(), 0, firstBufSz);
+		memset(secondBuf.data(), 0, secondBufSz);
+
+		LOG(INFO) << "### Reading buffers";
+
+		// Attempt to read the first block.
+		pos = iolibDriveGetPosition(drive, NULL);
+		LOG(INFO) << "Drive starting at block " << pos;
+
+		LOG(INFO) << "Reading first buffer...";
+		bytesRead = iolibDriveRead(drive, firstBuf.data(), firstBufSz, NULL);
+		LOG(INFO) << "\tRead " << bytesRead << " bytes, expected " << firstBufSz;
+
+		// Since this is an exact read, skip the file mark.
+		iolibDriveSkipFile(drive);
+
+		pos = iolibDriveGetPosition(drive, NULL);
+		LOG(INFO) << "Drive ended at block " << pos;
+
+		// Now, read the second block
+		LOG(INFO) << "Reading second buffer...";
+		bytesRead = iolibDriveRead(drive, secondBuf.data(), secondBufSz, NULL);
+		LOG(INFO) << "\tRead " << bytesRead << " bytes, expected " << secondBufSz;
+
+		pos = iolibDriveGetPosition(drive, NULL);
+		LOG(INFO) << "Drive ended at block " << pos;
+
+
+		// Calculate the CRC of both blocks
+		LOG(INFO) << "### Calculating CRC of read buffers";
+		LOG(INFO) << "Calculating CRC of first block";
+		uint32_t firstCrcRead = crc32c(0, firstBuf.data(), firstBufSz);
+
+		if(firstCrcRead != firstCrc) {
+			LOG(ERROR) << "\tCRC MISMATCH ON FIRST BLOCK! "
+					   << "Got 0x" << hex << firstCrcRead << ", expected 0x"
+					   << firstCrc << dec;
+		} else {
+			LOG(INFO) << "\tCRC check on first block succeeded.";
+		}
+
+		// Check the second block's CRC
+		LOG(INFO) << "Calculating CRC of second block";
+		uint32_t secondCrcRead = crc32c(0, secondBuf.data(), secondBufSz);
+
+		if(secondCrcRead != secondCrc) {
+			LOG(ERROR) << "\tCRC MISMATCH ON SECOND BLOCK! "
+					   << "Got 0x" << hex << secondCrcRead << ", expected 0x"
+					   << secondCrc << dec;
+		} else {
+			LOG(INFO) << "\tCRC check on second block succeeded.";
+		}
+
+		// Rewind the tape one last time.
+		LOG(INFO) << "### Rewinding tape to beginning...";
+		iolibDriveRewind(drive);
+
+		// Eject the tape out of the drive, so that the autoloader can get at it
+		LOG(INFO) << "### Ejecting media in drive";
+		iolibDriveEject(drive);
+	}
+
+	// Unload the tape back into its origin slot.
+	if(lib.numLoaders > 0) {
+		LOG(INFO) << "### Unloading tape back to original slot...";
+
+		// Unload the tape to the slot where it came from.
+		iolib_loader_t loader = lib.loaders[0];
+		iolib_storage_element_t element = GetSlotAtIndex(loader, selectedTape);
+		iolib_storage_element_t drive = GetDriveAtIndex(loader, 0);
+
+		iolibLoaderMove(loader, drive, element);
+	}
+
     return 0;
+}
+
+static iolib_storage_element_t GetSlotAtIndex(iolib_loader_t loader, off_t index) {
+	return GetElementAtIndex(loader, index, kStorageElementSlot);
+}
+
+static iolib_storage_element_t GetDriveAtIndex(iolib_loader_t loader, off_t index) {
+	return GetElementAtIndex(loader, index, kStorageElementDrive);
+}
+
+static iolib_storage_element_t GetElementAtIndex(iolib_loader_t loader, off_t index, iolib_storage_element_type_t type) {
+	iolib_storage_element_t elements[MAX_ELEMENTS];
+	size_t numElementsInType = 0;
+
+	// get all elements of this type pls
+	iolibLoaderGetElements(loader, type,
+		(iolib_storage_element_t *) &elements, MAX_ELEMENTS);
+	numElementsInType = iolibLoaderGetNumElements(loader, type, NULL);
+
+	// iterate through them all
+	for(int j = 0; j < numElementsInType; j++) {
+		iolib_storage_element_t element = elements[j];
+
+		if(iolibElementGetAddress(element, NULL) == index) {
+			return element;
+		}
+	}
+
+	// no element found
+	return NULL;
 }
 
 static string ElementFlagsToString(iolib_storage_element_flags_t flags) {
@@ -126,4 +311,22 @@ static string ElementFlagsToString(iolib_storage_element_flags_t flags) {
 	}
 
 	return ss.str();
+}
+
+/// Read an int from stdin
+static int ReadInt() {
+	string input;
+	int theInt;
+
+	while(true) {
+		getline(cin, input);
+
+		// This code converts from string to number safely.
+		stringstream myStream(input);
+		if(myStream >> theInt) {
+			return theInt;
+		}
+
+		cout << "Invalid number, please try again" << endl;
+	}
 }

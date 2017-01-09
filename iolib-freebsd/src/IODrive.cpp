@@ -49,8 +49,8 @@ iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {
 
     // Perform the ioctl
     struct mtget mtStatus;
-    err = ioctl(this->fdSa, MTIOCGET, &mtStatus);
-    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->devSa;
+    err = ioctl(this->fdSaCtl, MTIOCGET, &mtStatus);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->devSaCtl;
 
     // Extract the status and convert it to our value
     status->deviceStatus = _mtioToNativeStatus(mtStatus.mt_dsreg);
@@ -62,7 +62,6 @@ iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {
     _closeSaCtl();
 
     return err;
-
 }
 
 /**
@@ -78,8 +77,8 @@ iolib_drive_operation_t Drive::getDriveOp() {
 
     // Perform the ioctl
     struct mtget mtStatus;
-    err = ioctl(this->fdSa, MTIOCGET, &mtStatus);
-    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->devSa;
+    err = ioctl(this->fdSaCtl, MTIOCGET, &mtStatus);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->devSaCtl;
 
     // Extract the status and convert it to our value
     status = _mtioToNativeStatus(mtStatus.mt_dsreg);
@@ -97,19 +96,22 @@ iolib_drive_operation_t Drive::getDriveOp() {
  */
 off_t Drive::getLogicalBlkPos() {
     int err = 0;
-    u_int32_t pos;
 
     // Ensure device is open
     _openSaCtl();
 
     // Perform the ioctl
-    err = ioctl(this->fdSa, MTIOCRDSPOS, &pos);
-    PCHECK(err != 0) << "Couldn't execute MTIOCRDSPOS on " << this->devSa;
+    struct mtget mtStatus;
+    err = ioctl(this->fdSaCtl, MTIOCGET, &mtStatus);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCGET on " << this->fdSaCtl;
+
+    // Extract the "relative file number of current position"
+    off_t fileNo = mtStatus.mt_fileno;
 
     // Close device once we're done.
     _closeSaCtl();
 
-    return pos;
+    return fileNo;
 }
 
 /**
@@ -117,14 +119,53 @@ off_t Drive::getLogicalBlkPos() {
  */
 iolib_error_t Drive::seekToLogicalBlkPos(off_t inPos) {
     int err = 0;
-    u_int32_t pos = inPos;
+    struct mtop mt_com;
 
     // Ensure device is open
     _openSa();
 
-    // Perform the ioctl
-    err = ioctl(this->fdSa, MTIOCSLOCATE, &pos);
-    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCSLOCATE on " << this->devSa;
+    // Calculate the difference between the current position and this position.
+    int difference = getLogicalBlkPos() - inPos;
+
+    mt_com.mt_count = std::abs(difference);
+
+    // If it's positive, execute the "forward space file" command.
+    if(difference > 0) {
+        mt_com.mt_op = MTFSF;
+
+        err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+        PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTFSF on " << this->devSa;
+    }
+    // If negative, run "backward space file" command.
+    else if(difference < 0) {
+        mt_com.mt_op = MTBSF;
+
+        err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+        PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTBSF on " << this->devSa;
+    }
+    // …And if the difference is zero, we do nothing.
+
+    // Close device once we're done.
+    _closeSa();
+    return err;
+}
+
+/**
+ * Skips one file ahead.
+ */
+iolib_error_t Drive::skipFileMark() {
+    int err = 0;
+    struct mtop mt_com;
+
+    // Ensure device is open
+    _openSa();
+
+    // Set up seek struct
+    mt_com.mt_count = 1;
+    mt_com.mt_op = MTFSF;
+
+    err = ioctl(this->fdSa, MTIOCTOP, &mt_com);
+    PLOG_IF(ERROR, err != 0) << "Couldn't execute MTIOCTOP MTFSF on " << this->devSa;
 
     // Close device once we're done.
     _closeSa();
