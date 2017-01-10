@@ -284,7 +284,8 @@ size_t Drive::writeTape(void *buf, size_t len, iolib_error_t *outErr) {
         } else {
             // If we're out of space, return a specific return code.
             if(errno == ENOSPC) {
-                return IOLIB_ERROR_EOM;
+                *outErr = IOLIB_ERROR_EOM;
+                return -1;
             }
         }
     }
