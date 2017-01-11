@@ -10,13 +10,14 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <vector>
 #include <algorithm>
+#include <cryptopp/sha.h>
+#include <cryptopp/hex.h>
+#include <cryptopp/filters.h>
 
 using namespace std;
+using namespace CryptoPP;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
-
-/// Sends the specified resource.
-static void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response, const shared_ptr<ifstream> &ifs);
 
 /**
  * Creates the listener, and initializes a synchronous TCP socket that will be
@@ -47,44 +48,54 @@ MainLoop::MainLoop() {
             // Uncomment the following line to enable Cache-Control
             // cache_control="Cache-Control: max-age=86400\r\n";
 
-            #ifdef HAVE_OPENSSL
-            // Uncomment the following lines to enable ETag
-            // {
-            //     ifstream ifs(path.string(), ifstream::in | ios::binary);
-            //     if(ifs) {
-            //         auto hash=SimpleWeb::Crypto::to_hex_string(SimpleWeb::Crypto::md5(ifs));
-            //         etag = "ETag: \""+hash+"\"\r\n";
-            //         auto it=request->header.find("If-None-Match");
-            //         if(it!=request->header.end()) {
-            //             if(!it->second.empty() && it->second.compare(1, hash.size(), hash)==0) {
-            //                 *response << "HTTP/1.1 304 Not Modified\r\n" << cache_control << etag << "\r\n\r\n";
-            //                 return;
-            //             }
-            //         }
-            //     }
-            //     else
-            //         throw invalid_argument("could not read file");
-            // }
-            #endif
-
+            // Open the file…
             auto ifs = make_shared<ifstream>();
-            ifs->open(path.string(), ifstream::in | ios::binary | ios::ate);
+            ifs->open(path.string(), ifstream::in | ios::binary);
 
-            if(*ifs) {
-                auto length=ifs->tellg();
-                ifs->seekg(0, ios::beg);
+            // Check that it was opened
+            if(!(*ifs)) {
+               // The stream could not be opened.
+               throw invalid_argument("could not read file");
+            }
 
-                *response << "HTTP/1.1 200 OK\r\n"
-                          << cache_control
-                          << etag
-                          << "Content-Length: " << length
-                          << "\r\n\r\n";
-                default_resource_send(server, response, ifs);
+            // Determine its size
+            ifs->seekg(0, ios::end);
+            auto length = ifs->tellg();
+            ifs->seekg(0, ios::beg);
+
+            // Read it into a temporary buffer
+            string fileContents;
+            fileContents.reserve(length);
+
+            fileContents.assign((istreambuf_iterator<char>(*ifs)), istreambuf_iterator<char>());
+
+            // Calculate its hash
+            SHA256 hash;
+            string digest;
+
+            StringSource s(fileContents, true, new HashFilter(hash, new HexEncoder(new StringSink(digest))));
+
+
+            etag = "ETag: \"" + digest + "\"\r\n";
+
+            // Does this etag match what the browser's asking for?
+            auto it = request->header.find("If-None-Match");
+
+            if(it != request->header.end()) {
+                // If so, return a 304.
+                if(!it->second.empty() && it->second.compare(1, digest.size(), digest) == 0) {
+                    *response << "HTTP/1.1 304 Not Modified\r\n" << cache_control << etag << "\r\n\r\n";
+                    return;
+                }
             }
-            // We couldn't open the file :(
-            else {
-                throw invalid_argument("could not read file");
-            }
+
+            // Then respond with its contents.
+            *response << "HTTP/1.1 200 OK\r\n"
+                      << cache_control
+                      << etag
+                      << "Content-Length: " << length
+                      << "\r\n\r\n";
+            *response << fileContents;
         }
 
         // If any exceptions were thrown, report them.
@@ -110,6 +121,10 @@ MainLoop::MainLoop() {
                     << "<hr />"
                     << "<i>backuperator-daemon</i>"
                     << "</body></html>";
+
+            LOG(WARNING) << "Error handling request for "
+                         << request->path << ": " << e.what() << "; "
+                         << "from " << request->remote_endpoint_address;
 
             // Secrete it to the client
             string content = message.str();
@@ -156,30 +171,3 @@ void MainLoop::run() {
     this->server.stop();
     this->serverThread.join();
 }
-
-/**
- * Sends the given resource to the server.
- */
-static void default_resource_send(const HttpServer &server, const shared_ptr<HttpServer::Response> &response,
-     const shared_ptr<ifstream> &ifs) {
-         // read and send 128 KB at a time
-         static vector<char> buffer(131072);
-         streamsize read_length;
-
-         // Read until EOF
-         if((read_length = ifs->read(&buffer[0], buffer.size()).gcount()) > 0) {
-             response->write(&buffer[0], read_length);
-
-             // Was the entire file read?
-             if(read_length == static_cast<streamsize>(buffer.size())) {
-                 // If so, send it to the server.
-                 server.send(response, [&server, response, ifs](const boost::system::error_code &ec) {
-                     if(!ec) {
-                         default_resource_send(server, response, ifs);
-                     } else {
-                         cerr << "Connection interrupted" << endl;
-                     }
-                 });
-             }
-         }
-     }

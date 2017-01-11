@@ -10,3 +10,6 @@
 [submodule "dependencies/Simple-Web-Server"]
 	path = dependencies/Simple-Web-Server
 	url = https://github.com/eidheim/Simple-Web-Server.git
+[submodule "dependencies/web-ui"]
+	path = dependencies/web-ui
+	url = git@gitlab.com:backuperator/web-ui.git
