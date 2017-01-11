@@ -7,3 +7,6 @@
 [submodule "dependencies/CTPL"]
 	path = dependencies/CTPL
 	url = https://github.com/vit-vit/CTPL.git
+[submodule "dependencies/Simple-Web-Server"]
+	path = dependencies/Simple-Web-Server
+	url = https://github.com/eidheim/Simple-Web-Server.git

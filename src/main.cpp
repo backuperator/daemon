@@ -1,4 +1,4 @@
-#include "DaemonListener.hpp"
+#include "MainLoop.hpp"
 #include "Logging.hpp"
 #include "IOLib.h"
 
@@ -8,19 +8,20 @@
 int main(int argc, char *argv[]) {
 	Logging::setUp(argv);
 
+    LOG(INFO) << "Starting backuperator-daemon...";
+
 	// Set up the IOLib
-    iolibLoadLib();
+    /*iolibLoadLib();
 
 	iolib_error_t ioErr = iolibInit();
 	CHECK(ioErr == 0) << "Error initializing IOLib: " << ioErr;
 
-    sleep(5);
+    sleep(5);*/
 
-    // Set up the listener
-    DaemonListener listener;
+    // Set up the main run loop
+    MainLoop listener;
 
-    // Enter the main socket wait loop
-    listener.startListening();
+    listener.run();
 
     return 0;
 }
