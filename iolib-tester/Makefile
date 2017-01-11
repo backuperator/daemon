@@ -1,17 +1,17 @@
-TARGET_EXEC ?= backuperator-daemon
+TARGET_EXEC ?= iolib-tester
 
 BUILD_DIR ?= ./build
-SRC_DIRS ?= helper src
+SRC_DIRS ?= $(shell readlink -f helper) src
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ cryptopp boost_system boost_filesystem glog protobuf 
+LIBS := c++ cryptopp boost_system glog
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) ../inc ../dependencies helper
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
-LIB_DIRS := dependencies/cryptopp
+LIB_DIRS := ../dependencies/cryptopp
 LIB_FLAGS := $(addprefix -L,$(LIB_DIRS)) $(addprefix -l,$(LIBS))
 
 CFLAGS ?= $(INC_FLAGS) -MMD -MP -msse4.2 -fno-omit-frame-pointer -g -fPIC

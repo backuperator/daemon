@@ -20,6 +20,7 @@ _iolib_drive_get_position_t iolibDriveGetPosition;
 _iolib_drive_set_position_t iolibDriveSeekToPosition;
 _iolib_drive_get_op_t iolibDriveGetCurrentOperation;
 _iolib_drive_rewind_t iolibDriveRewind;
+_iolib_drive_skip_file_t iolibDriveSkipFile;
 _iolib_drive_eject_t iolibDriveEject;
 _iolib_drive_lock_medium_t iolibDriveLockMedium;
 _iolib_drive_write_t iolibDriveWrite;
@@ -67,6 +68,7 @@ void iolibLoadLib() {
     IOLIB_RESOLVE_FUNC(iolibDriveSeekToPosition);
     IOLIB_RESOLVE_FUNC(iolibDriveGetCurrentOperation);
     IOLIB_RESOLVE_FUNC(iolibDriveRewind);
+    IOLIB_RESOLVE_FUNC(iolibDriveSkipFile);
     IOLIB_RESOLVE_FUNC(iolibDriveEject);
     IOLIB_RESOLVE_FUNC(iolibDriveLockMedium);
     IOLIB_RESOLVE_FUNC(iolibDriveWrite);

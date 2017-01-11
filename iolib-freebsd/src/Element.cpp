@@ -13,10 +13,15 @@ namespace iolibbsd {
  * NOTE: We don't copy the structure, or reference it after this constructor has
  * completed, since it's assumed it's part of a shared buffer.
  */
-Element::Element(Loader *loader, struct changer_element_status *chElement) {
+Element::Element(Loader *loader, iolib_storage_element_type_t type,
+                 struct changer_element_status *chElement) {
+    CHECK(loader != NULL) << "Element must be created with a parent";
+    CHECK(chElement != NULL) << "chio struct must be specified";
+
     this->parent = loader;
 
     // Parse the changer element structure
+    this->type = type;
     this->address = chElement->ces_addr;
     this->volTag = _stringFromChVolTag(chElement->ces_pvoltag);
 
@@ -35,33 +40,36 @@ Element::~Element() {
  * the corresponding iolib_storage_element_flags_t.
  */
 void Element::_parseChElementFlags(u_char flagsIn) {
-    this->flags = kStorageElementNoFlags;
+    iolib_storage_element_flags_t flags = kStorageElementNoFlags;
 
     // Is there something in this element?
-    if(flagsIn && CES_STATUS_FULL) {
-        this->flags |= kStorageElementFull;
+    if(flagsIn & CES_STATUS_FULL) {
+        flags = flags | kStorageElementFull;
     }
     // Was the medium inserted by the operator?
-    if(flagsIn && CES_STATUS_IMPEXP) {
-        this->flags |= kStorageElementPlacedByOperator;
+    if(flagsIn & CES_STATUS_IMPEXP) {
+        flags = flags | kStorageElementPlacedByOperator;
     }
     // Is the medium in an "exceptional" state (i.e. invalid barcode)?
-    if(flagsIn && CES_STATUS_EXCEPT) {
-        this->flags |= kStorageElementInvalidLabel;
+    if(flagsIn & CES_STATUS_EXCEPT) {
+        flags = flags | kStorageElementInvalidLabel;
     }
     // Can the medium be accessed by the picker?
-    if(flagsIn && CES_STATUS_ACCESS) {
-        this->flags |= kStorageElementAccessible;
+    if(flagsIn & CES_STATUS_ACCESS) {
+        flags = flags | kStorageElementAccessible;
     }
 
     // Does the element support medium export?
-    if(flagsIn && CES_STATUS_EXENAB) {
-        this->flags |= kStorageElementSupportsExport;
+    if(flagsIn & CES_STATUS_EXENAB) {
+        flags = flags | kStorageElementSupportsExport;
     }
     // Does the element support medium import?
-    if(flagsIn && CES_STATUS_INENAB) {
-        this->flags |= kStorageElementSupportsImport;
+    if(flagsIn & CES_STATUS_INENAB) {
+        flags = flags | kStorageElementSupportsImport;
     }
+
+    // asisgn it
+    this->flags = flags;
 }
 
 /**

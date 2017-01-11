@@ -79,16 +79,15 @@ IOLIB_EXPORT void iolibStringFree(iolib_string_t string) {
  * that were found in the system. If an error occurs, -1 is returned, and the
  * error value is written in the optional int pointer.
  */
-IOLIB_EXPORT int iolibEnumerateDevices(iolib_library_t *lib, int max, iolib_error_t *outErr) {
-    // TODO: Implement this
-    return -1;
+IOLIB_EXPORT int iolibEnumerateDevices(iolib_library_t *lib, size_t max, iolib_error_t *outErr) {
+    return _ioLibShared->enumerateLibraries(lib, max);
 }
 
 /**
  * Frees all library structures previously inserted into the specified array.
  */
-IOLIB_EXPORT void iolibEnumerateDevicesFree(iolib_library_t *lib, int num) {
-    // TODO: implement
+IOLIB_EXPORT void iolibEnumerateDevicesFree(iolib_library_t *lib, size_t num) {
+    // This doesn't do anything, since we didn't allocate any memory.
 }
 
 //////////////////////////////// Drive Handling ////////////////////////////////
@@ -100,49 +99,45 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
     // TODO: implement
-    return NULL;
+    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
 }
 
 /**
- * Writes the status of the specified tape drive into the supplied buffer.
+ * Gets the drive's status, populating the specified struct.
  */
 IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive_status_t *outStatus) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->getDriveStatus(outStatus);
 }
 
 /**
- * Places the drive's current logical block position in the specified variable.
+ * Returns the drive's current logical block position.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetPosition(iolib_drive_t _drive, size_t *outPos) {
+IOLIB_EXPORT off_t iolibDriveGetPosition(iolib_drive_t _drive, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->getLogicalBlkPos();
 }
 
 /**
  * Seeks the drive to the specified logical block position. The drive must NOT
  * be pre-occupied performing any other operation.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, size_t block) {
+IOLIB_EXPORT iolib_error_t iolibDriveSeekToPosition(iolib_drive_t _drive, off_t block) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->seekToLogicalBlkPos(block);
 }
 
 /**
  * Determines the drive's current operation, if such information is currently
  * available from the drive.
  */
-IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, iolib_drive_operation_t *outOp) {
+IOLIB_EXPORT iolib_drive_operation_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->getDriveOp();
 }
 
 /**
@@ -152,19 +147,30 @@ IOLIB_EXPORT iolib_error_t iolibDriveGetCurrentOperation(iolib_drive_t _drive, i
 IOLIB_EXPORT iolib_error_t iolibDriveRewind(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->rewind();
+}
+
+/**
+ * Skips ahead one file. This can be used at the end of an exact size read to
+ * start the next read at the beginning of the next tape file.
+ */
+IOLIB_EXPORT iolib_error_t iolibDriveSkipFile(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
+    return drive->skipFileMark();
 }
 
 /**
  * Ejects the tape from the drive. Note that this call should only be used if
  * the drive is idle.
+ *
+ * How does ejecting work in the context of FreeBSD's tape infrastructure? I
+ * _think_ that this is automatically done when the drive is taken offline.
  */
 IOLIB_EXPORT iolib_error_t iolibDriveEject(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->eject();
 }
 
 /**
@@ -178,6 +184,7 @@ IOLIB_EXPORT iolib_error_t iolibDriveLockMedium(iolib_drive_t _drive, bool lockF
     GET_CLASS(Drive, drive);
 
     // TODO: implement
+    LOG(WARNING) << "iolibDriveLockMedium is not implemented - doing nothing";
     return -1;
 }
 
@@ -202,8 +209,7 @@ IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t _drive, void *buf, size_t len,
                                     bool writeFileMark, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->writeTape(buf, len, outErr);
 }
 
 /**
@@ -219,8 +225,7 @@ IOLIB_EXPORT size_t iolibDriveWrite(iolib_drive_t _drive, void *buf, size_t len,
 IOLIB_EXPORT iolib_error_t iolibDriveWriteFileMark(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->writeFileMark();
 }
 
 /**
@@ -239,8 +244,7 @@ IOLIB_EXPORT size_t iolibDriveRead(iolib_drive_t _drive, void *buf,
                                    size_t len, iolib_error_t *outErr) {
     GET_CLASS(Drive, drive);
 
-    // TODO: implement
-    return -1;
+    return drive->readTape(buf, len, outErr);
 }
 
 /**
@@ -263,7 +267,7 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
     GET_CLASS(Loader, loader);
 
     // TODO: implement
-    return "<<< UNIMPLIMENTED >>>";
+    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
 }
 
 /**
@@ -275,8 +279,7 @@ IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
                                               iolib_error_t *outErr) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    return loader->getNumElementsForType(type);
 }
 
 /**
@@ -287,8 +290,7 @@ IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
 IOLIB_EXPORT iolib_error_t iolibLoaderPerformInventory(iolib_loader_t _loader) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    return loader->performInventory();
 }
 
 /**
@@ -302,15 +304,14 @@ IOLIB_EXPORT iolib_error_t iolibLoaderMove(iolib_loader_t _loader,
     GET_CLASS(Element, src);
     GET_CLASS(Element, dest);
 
-    // TODO: implement
-    return -1;
+    return loader->moveElement(src, dest);
 }
 
 /**
  * Exchanges the media in the first storage element with that in the second.
  * This call will block while the move is taking place.
  *
- * NOTE: This may not be supported on many loaders.
+ * NOTE: This is not supported on many loaders.
  */
 IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t _loader,
                                                iolib_storage_element_t _src,
@@ -318,6 +319,8 @@ IOLIB_EXPORT iolib_error_t iolibLoaderExchange(iolib_loader_t _loader,
     GET_CLASS(Loader, loader);
     GET_CLASS(Element, src);
     GET_CLASS(Element, dest);
+
+    LOG(FATAL) << "iolibLoaderExchange not implemented";
 
     // TODO: implement
     return -1;
@@ -338,8 +341,9 @@ IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t _loader,
                                                   size_t outLen) {
     GET_CLASS(Loader, loader);
 
-    // TODO: implement
-    return -1;
+    Element **outBuf = reinterpret_cast<Element **>(out);
+    loader->getElementsForType(type, outLen, outBuf);
+    return 0;
 }
 
 /////////////////////////// Storage Element Handling ///////////////////////////

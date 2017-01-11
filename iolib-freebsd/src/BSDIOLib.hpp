@@ -50,6 +50,8 @@ class BSDIOLib {
 		BSDIOLib();
 		~BSDIOLib();
 
+		int enumerateLibraries(iolib_library_t *, size_t);
+
     private:
 		std::vector<iolib_config_library_t> configLibraries;
 		std::vector<library_t> libraries;

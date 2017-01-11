@@ -29,11 +29,6 @@
  * Maximum number of loaders per library.
  */
 #define IOLIB_LIBRARY_MAX_LOADERS       4
-/**
- * Maximum number of storage elements per library. Note that each storage
- * element usually corresponds to a magazine, and holds a number of tapes.
- */
-#define IOLIB_LIBRARY_MAX_ELEMENTS      8
 
 /////////////////////////////// Type Definitions ///////////////////////////////
 /**
@@ -44,23 +39,26 @@
  */
 typedef int iolib_error_t;
 
+/// Indicates that the end of the media has been reached.
+#define IOLIB_ERROR_EOM 	-90000
+
 /**
  * IOLib strings; these are really just char * pointers, but have a special type
  * to indicate that they belong to the IOLib, and must be freed when the caller
  * is done using them.
  */
-typedef char *iolib_string_t;
+typedef char* iolib_string_t;
 
 /**
  * Opaque type for a session.
  */
-typedef void *iolib_session_t;
+typedef void* iolib_session_t;
 
 /**
  * Type for the opaque pointer to a drive object. The object should only be
  * manipulated through methods in the IOLib.
  */
-typedef void *iolib_drive_t;
+typedef void* iolib_drive_t;
 
 /**
  * A list of several operations that a tape drive could be performing at a given
@@ -93,6 +91,9 @@ typedef enum {
     kDriveStatusLoading,
     /// Unloading a tape currently in the drive
     kDriveStatusUnloading,
+
+    // Undefined other status
+    kDriveStatusOther
 } iolib_drive_operation_t;
 
 /**
@@ -102,7 +103,7 @@ typedef enum {
  */
 typedef struct {
     // Device status register
-    uint16_t deviceStatus;
+    iolib_drive_operation_t deviceStatus;
     // Error register
     uint16_t deviceError;
 
@@ -134,16 +135,16 @@ typedef void* iolib_storage_element_t;
  */
 typedef enum {
 	// Medium transport element (picker)
-	kStorageElementTransport = (1 << 1),
+	kStorageElementTransport = (1 << 0),
 	// Storage element (slot)
-	kStorageElemenetSlot = (1 << 2),
+	kStorageElementSlot = (1 << 1),
 	// Import/export element (portal) - mailslots fall in this category
-	kStorageElementPortal = (1 << 3),
+	kStorageElementPortal = (1 << 2),
 	// Data transfer element (drive)
-	kStorageElementDrive = (1 << 4),
+	kStorageElementDrive = (1 << 3),
 
 	// Any type of storage element
-	kStorageElementAny = (kStorageElementTransport | kStorageElemenetSlot |
+	kStorageElementAny = (kStorageElementTransport | kStorageElementSlot |
 						  kStorageElementPortal | kStorageElementDrive)
 } iolib_storage_element_type_t;
 
@@ -176,14 +177,6 @@ inline iolib_storage_element_flags_t operator|(iolib_storage_element_flags_t a, 
 inline iolib_storage_element_flags_t operator&(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
     return static_cast<iolib_storage_element_flags_t>(static_cast<int>(a) & static_cast<int>(b));
 }
-
-inline iolib_storage_element_flags_t operator|=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
-    return a | b;
-}
-inline iolib_storage_element_flags_t operator&=(iolib_storage_element_flags_t a, iolib_storage_element_flags_t b) {
-    return a & b;
-}
-
 #endif
 
 /**
@@ -207,24 +200,19 @@ inline iolib_storage_element_flags_t operator&=(iolib_storage_element_flags_t a,
  */
 typedef struct {
     // A descriptive name for the library, if available
-    const iolib_string_t name;
+    iolib_string_t name;
     // Location of this library, such as "SCSI0:2" or "SAS500277a4100c4e21"
-    const iolib_string_t location;
+    iolib_string_t location;
 
     // Number of tape drives in this library
     size_t numDrives;
     // Pointer to drive objects
-    iolib_drive_t* drives[IOLIB_LIBRARY_MAX_DRIVES];
+    iolib_drive_t drives[IOLIB_LIBRARY_MAX_DRIVES];
 
     // Number of loaders in the drive
     size_t numLoaders;
     // Pointer to loader objects
-    iolib_loader_t* loaders[IOLIB_LIBRARY_MAX_LOADERS];
-
-    // Number of storage elements
-    size_t numStorageElements;
-    // Pointer to storage element objects
-    iolib_storage_element_t *elements[IOLIB_LIBRARY_MAX_ELEMENTS];
+    iolib_loader_t loaders[IOLIB_LIBRARY_MAX_LOADERS];
 } iolib_library_t;
 
 #endif

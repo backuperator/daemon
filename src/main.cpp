@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
 	// Set up the IOLib
     /*iolibLoadLib();
 
+	LOG(INFO) << "Initializing iolib...";
 	iolib_error_t ioErr = iolibInit();
 	CHECK(ioErr == 0) << "Error initializing IOLib: " << ioErr;
 

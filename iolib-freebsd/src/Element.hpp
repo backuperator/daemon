@@ -25,10 +25,15 @@ namespace iolibbsd {
 class Loader;
 
 class Element {
+    friend class Loader;
+
     public:
-        Element(Loader *, struct changer_element_status *);
+        Element(Loader *, iolib_storage_element_type_t, struct changer_element_status *);
         ~Element();
 
+        iolib_storage_element_type_t getType() {
+            return this->type;
+        }
         off_t getAddress() {
             return this-> address;
         }
@@ -42,6 +47,8 @@ class Element {
     private:
         Loader *parent;
 
+        // Type of the element
+        iolib_storage_element_type_t type;
         // Logical address of this element in the changer
         off_t address;
         // Flags that define the state of this element

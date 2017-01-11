@@ -40,6 +40,44 @@ BSDIOLib::~BSDIOLib() {
 }
 
 /**
+ * Enumerates the libraries, converting them into the shared iolib type that
+ * contains references to the drives and loaders in it.
+ */
+int BSDIOLib::enumerateLibraries(iolib_library_t *libOut, size_t max) {
+    size_t librariesOutput = 0;
+    int i = 0;
+
+    // Iterate over all of the libraries
+    for(auto it = this->libraries.begin(); it < this->libraries.end(); it++) {
+        // Check if we've filled the buffer
+        if(librariesOutput > max) {
+            return max;
+        }
+
+        memset(&libOut[librariesOutput], 0, sizeof(iolib_library_t));
+
+        // Copy drives
+        libOut[librariesOutput].numDrives = it->drives.size();
+        for(int j = 0; j < it->drives.size(); j++) {
+            libOut[librariesOutput].drives[j] = reinterpret_cast<iolib_drive_t>(it->drives.at(j));
+        }
+
+        // Copy loaders
+        libOut[librariesOutput].numLoaders = it->loaders.size();
+        for(int j = 0; j < it->loaders.size(); j++) {
+            libOut[librariesOutput].loaders[j] = reinterpret_cast<iolib_loader_t>(it->loaders.at(j));
+        }
+
+        // When done, increment the counter.
+        librariesOutput++;
+    }
+
+    // Return the number of libraries we output.
+    return librariesOutput;
+}
+
+
+/**
  * Parses the config file into library structs.
  *
  * TODO: Actually read from a config file…
@@ -82,14 +120,14 @@ void BSDIOLib::_parseConfigFile() {
  */
 void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
     // Print some info…
-    LOG(INFO) << "Processing library with " << lib.numDrives << " drives, "
-              << lib.numLoaders << " loaders:";
+    VLOG(1) << "Processing library with " << lib.numDrives << " drives, "
+            << lib.numLoaders << " loaders";
 
     library_t library;
 
     // First, process the drives
     for(size_t i = 0; i < lib.numDrives; i++) {
-        LOG(INFO) << "\tDrive " << i << ": " << lib.drives[i].blockDev;
+        VLOG(1) << "\tDrive " << i << ": " << lib.drives[i].blockDev;
 
         Drive *drive = new Drive(lib.drives[i].blockDev, lib.drives[i].passDev);
         library.drives.push_back(drive);
@@ -97,7 +135,7 @@ void BSDIOLib::_initLibrary(iolib_config_library_t lib) {
 
     // Then, process the loaders
     for(size_t i = 0; i < lib.numLoaders; i++) {
-        LOG(INFO) << "\tLoader " << i << ": " << lib.loaders[i].changerDev;
+        VLOG(1) << "\tLoader " << i << ": " << lib.loaders[i].changerDev;
 
         Loader *loader = new Loader(lib.loaders[i].changerDev, lib.loaders[i].passDev);
         library.loaders.push_back(loader);
