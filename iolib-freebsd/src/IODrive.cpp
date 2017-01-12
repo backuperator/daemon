@@ -39,6 +39,15 @@ Drive::~Drive() {
 
 
 /**
+ * Returns a copy of the drive file's path.
+ */
+iolib_string_t Drive::getDeviceFile() {
+	iolib_string_t string = static_cast<iolib_string_t>(malloc(256));
+	strncpy(string, this->devSa, 256);
+	return string;
+}
+
+/**
  * Gets status information from the drive.
  */
 iolib_error_t Drive::getDriveStatus(iolib_drive_status_t *status) {

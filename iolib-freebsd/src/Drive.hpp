@@ -15,6 +15,8 @@ class Drive {
 		Drive(const char *, const char *);
 		~Drive();
 
+		iolib_string_t getDeviceFile();
+
 		iolib_error_t getDriveStatus(iolib_drive_status_t *);
 		iolib_drive_operation_t getDriveOp();
 

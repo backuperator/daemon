@@ -23,6 +23,8 @@ class Loader {
         Loader(const char *, const char *);
         ~Loader();
 
+		iolib_string_t getDeviceFile();
+
         size_t getNumElementsForType(iolib_storage_element_type_t);
         void getElementsForType(iolib_storage_element_type_t, size_t, Element **);
 

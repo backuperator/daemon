@@ -40,6 +40,15 @@ Loader::~Loader() {
 
 
 /**
+ * Returns a copy of the drive file's path.
+ */
+iolib_string_t Loader::getDeviceFile() {
+	iolib_string_t string = static_cast<iolib_string_t>(malloc(256));
+	strncpy(string, this->devCh, 256);
+	return string;
+}
+
+/**
  * Returns the number of elements for a given element type.
  */
 size_t Loader::getNumElementsForType(iolib_storage_element_type_t type) {

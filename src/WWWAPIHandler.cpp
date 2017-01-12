@@ -75,7 +75,8 @@ json WWWAPIHandler::_getAllLibraries() {
 
             drives.push_back({
                 {"id", lastDriveId},
-                {"name", iolibDriveGetName(drive)}
+                {"name", iolibDriveGetName(drive)},
+                {"file", iolibDriveGetDevFile(drive)}
                 // {"library", libs[i].id}
             });
             driveIds.push_back(lastDriveId++);
@@ -87,7 +88,8 @@ json WWWAPIHandler::_getAllLibraries() {
 
             loaders.push_back({
                 {"id", lastLoaderId},
-                {"name", iolibLoaderGetName(loader)}
+                {"name", iolibLoaderGetName(loader)},
+                {"file", iolibLoaderGetDevFile(loader)}
                 // {"library", libs[i].id}
             });
             loaderIds.push_back(lastLoaderId++);

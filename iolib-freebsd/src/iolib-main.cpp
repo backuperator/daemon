@@ -103,6 +103,15 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
 }
 
 /**
+ * Returns a string containing the path to this drive's device node.
+ */
+IOLIB_EXPORT iolib_string_t iolibDriveGetDevFile(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
+    return drive->getDeviceFile();
+}
+
+/**
  * Gets the drive's status, populating the specified struct.
  */
 IOLIB_EXPORT iolib_error_t iolibDriveGetStatus(iolib_drive_t _drive, iolib_drive_status_t *outStatus) {
@@ -268,6 +277,15 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
 
     // TODO: implement
     return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
+}
+
+/**
+ * Returns a string containing the path to this loaders device node.
+ */
+IOLIB_EXPORT iolib_string_t iolibLoaderGetDevFile(iolib_loader_t _loader) {
+	GET_CLASS(Loader, loader);
+
+    return loader->getDeviceFile();
 }
 
 /**

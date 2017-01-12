@@ -90,6 +90,12 @@ typedef iolib_string_t (*_iolib_drive_get_name_t)(iolib_drive_t);
 IOLIB_EXTERN _iolib_drive_get_name_t iolibDriveGetName;
 
 /**
+ * Returns a string containing the path to this drive's device node.
+ */
+typedef iolib_string_t (*_iolib_drive_get_devfile_t)(iolib_drive_t);
+IOLIB_EXTERN _iolib_drive_get_devfile_t iolibDriveGetDevFile;
+
+/**
  * Gets the drive's status, populating the specified struct.
  */
 typedef iolib_error_t (*_iolib_drive_get_status_t)(iolib_drive_t, iolib_drive_status_t *);
@@ -208,6 +214,12 @@ IOLIB_EXTERN _iolib_drive_is_at_end_t iolibDriveIsEOM;
  */
 typedef iolib_string_t (*_iolib_loader_get_name_t)(iolib_loader_t);
 IOLIB_EXTERN _iolib_loader_get_name_t iolibLoaderGetName;
+
+/**
+ * Returns a string containing the path to this loaders device node.
+ */
+typedef iolib_string_t (*_iolib_loader_get_devfile_t)(iolib_loader_t);
+IOLIB_EXTERN _iolib_loader_get_devfile_t iolibLoaderGetDevFile;
 
 /**
  * Returns the number of storage elements of the given type that a certain
