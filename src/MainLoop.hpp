@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "Simple-Web-Server/server_http.hpp"
+#include "WWWAPIHandler.hpp"
 
 class MainLoop {
     public:
@@ -20,6 +21,9 @@ class MainLoop {
         SimpleWeb::Server<SimpleWeb::HTTP> server;
         std::thread serverThread;
 
+        WWWAPIHandler handler;
+
+		void errorForException(std::exception, std::string, std::string, std::shared_ptr<SimpleWeb::Server<SimpleWeb::HTTP>::Response>);
 };
 
 #endif

@@ -6,9 +6,9 @@ SRC_DIRS ?= helper src
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
-LIBS := c++ cryptopp boost_system boost_filesystem glog protobuf 
+LIBS := c++ m cryptopp boost_system boost_filesystem boost_regex glog protobuf 
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) inc dependencies dependencies/json/src
 INC_FLAGS := $(addprefix -I,$(INC_DIRS)) -I/usr/local/include
 
 LIB_DIRS := dependencies/cryptopp

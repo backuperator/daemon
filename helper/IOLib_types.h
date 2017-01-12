@@ -202,7 +202,7 @@ typedef struct {
     // A descriptive name for the library, if available
     iolib_string_t name;
     // Location of this library, such as "SCSI0:2" or "SAS500277a4100c4e21"
-    iolib_string_t location;
+    iolib_string_t id;
 
     // Number of tape drives in this library
     size_t numDrives;

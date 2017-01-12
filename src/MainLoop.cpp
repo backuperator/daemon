@@ -6,8 +6,7 @@
 #include <glog/logging.h>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include <json.hpp>
 #include <vector>
 #include <algorithm>
 #include <cryptopp/sha.h>
@@ -16,6 +15,8 @@
 
 using namespace std;
 using namespace CryptoPP;
+
+using json = nlohmann::json;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 
@@ -26,6 +27,42 @@ typedef SimpleWeb::Server<SimpleWeb::HTTP> HttpServer;
 MainLoop::MainLoop() {
     // Set up the HTTP server
     this->server.config.port = 7890;
+
+	// Handle any requests in the API path
+	this->server.resource["^/api.*$"]["GET"]=[=](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		try {
+            // Parse request
+            json jsonOut = this->handler.handle("GET", request->path, {});
+            string jsonOutStr = jsonOut.dump(4);
+
+            // Send response
+			*response << "HTTP/1.1 200 OK\r\n"
+        			  << "Content-Type: application/json\r\n"
+        			  << "Content-Length: " << jsonOutStr.length() << "\r\n\r\n"
+        			  << jsonOutStr;
+		} catch(exception& e) {
+            this->errorForException(e, e.what(), request->path, response);
+		}
+	};
+
+	this->server.resource["^/api$"]["POST"]=[=](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+		try {
+            // Read the input
+			json jsonIn = json::parse(request->content);
+
+            // Perform request
+            json jsonOut = this->handler.handle("POST", request->path, {});
+            string jsonOutStr = jsonOut.dump(4);
+
+            // Send response
+			*response << "HTTP/1.1 200 OK\r\n"
+        			  << "Content-Type: application/json\r\n"
+        			  << "Content-Length: " << jsonOutStr.length() << "\r\n\r\n"
+        			  << jsonOutStr;
+		} catch(exception& e) {
+            this->errorForException(e, e.what(), request->path, response);
+		}
+	};
 
     // Default resource: get contents of "webui" directory
     this->server.default_resource["GET"]=[=](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
@@ -100,37 +137,11 @@ MainLoop::MainLoop() {
 
         // If any exceptions were thrown, report them.
         catch(const exception &e) {
-            stringstream message;
-
-            message << "<!doctype html><html><head><style type=\"text/css\">"
-                    << "body {"
-                    << "font-family: \"DejaVu Sans\", Helvetica, sans-serif;"
-                    << "font-size: 11pt; line-spacing: 1.2;"
-                    << "}"
-                    << "code, pre {"
-                    << "font-family: \"DejaVu Sans Mono\", monospaced;"
-                    << "}"
-                    << "i {"
-                    << "font-size: 80%;"
-                    << "}"
-                    << "</style><body>"
-                    << "<h1>An Error Occurred</h1>"
-                    << "<p>Could not open <code>" << request->path << "</code>.</p>"
-                    << "<h3>Exception Information</h3>"
-                    << "<p>Type: <code>" << e.what() << "</code></p>"
-                    << "<hr />"
-                    << "<i>backuperator-daemon</i>"
-                    << "</body></html>";
+            this->errorForException(e, e.what(), request->path, response);
 
             LOG(WARNING) << "Error handling request for "
                          << request->path << ": " << e.what() << "; "
                          << "from " << request->remote_endpoint_address;
-
-            // Secrete it to the client
-            string content = message.str();
-            *response << "HTTP/1.1 400 Bad Request\r\n"
-                      << "Content-Length: " << content.length()
-                      << "\r\n\r\n" << content;
         }
     };
 }
@@ -170,4 +181,38 @@ void MainLoop::run() {
     // If we get here, the loop should exit. Stop the server.
     this->server.stop();
     this->serverThread.join();
+}
+
+
+/**
+ * Outputs a pretty error page to the server for the given exception.
+ */
+void MainLoop::errorForException(exception e, string errStr, string path, shared_ptr<HttpServer::Response> response) {
+	stringstream message;
+
+	message << "<!doctype html><html><head><style type=\"text/css\">"
+			<< "body {"
+			<< "font-family: \"DejaVu Sans\", Helvetica, sans-serif;"
+			<< "font-size: 11pt; line-spacing: 1.2;"
+			<< "}"
+			<< "code, pre {"
+			<< "font-family: \"DejaVu Sans Mono\", monospaced;"
+			<< "}"
+			<< "i {"
+			<< "font-size: 80%;"
+			<< "}"
+			<< "</style><body>"
+			<< "<h1>An Error Occurred</h1>"
+			<< "<p>Could not process request for <code>" << path << "</code>.</p>"
+			<< "<h3>Exception Information</h3>"
+			<< "<p>Type: <code>" << errStr << "</code></p>"
+			<< "<hr />"
+			<< "<i>backuperator-daemon</i>"
+			<< "</body></html>";
+
+	// Secrete it to the client
+	string content = message.str();
+	*response << "HTTP/1.1 500 Internal Server Error\r\n"
+			 << "Content-Length: " << content.length()
+			 << "\r\n\r\n" << content;
 }

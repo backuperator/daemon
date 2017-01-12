@@ -56,6 +56,16 @@ int BSDIOLib::enumerateLibraries(iolib_library_t *libOut, size_t max) {
 
         memset(&libOut[librariesOutput], 0, sizeof(iolib_library_t));
 
+		// Set the ID to the offset in the array of the library struct
+        char *idStr = reinterpret_cast<char *>(malloc(64));
+        snprintf(idStr, 64, "%zu", librariesOutput);
+        libOut[librariesOutput].id = idStr;
+
+		// Create a name
+        char *nameStr = reinterpret_cast<char *>(malloc(64));
+        snprintf(nameStr, 64, "Library %zu", librariesOutput);
+        libOut[librariesOutput].name = nameStr;
+
         // Copy drives
         libOut[librariesOutput].numDrives = it->drives.size();
         for(int j = 0; j < it->drives.size(); j++) {
