@@ -11,13 +11,11 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "Starting backuperator-daemon...";
 
 	// Set up the IOLib
-    /*iolibLoadLib();
+    iolibLoadLib();
 
 	LOG(INFO) << "Initializing iolib...";
 	iolib_error_t ioErr = iolibInit();
 	CHECK(ioErr == 0) << "Error initializing IOLib: " << ioErr;
-
-    sleep(5);*/
 
     // Set up the main run loop
     MainLoop listener;
