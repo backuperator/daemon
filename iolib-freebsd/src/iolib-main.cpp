@@ -103,6 +103,22 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
 }
 
 /**
+ * Returns a stringified UUID for this drive. There is no guarantee that the
+ * UUID is persistent.
+ */
+IOLIB_EXPORT iolib_string_t iolibDriveGetUuid(iolib_drive_t _drive) {
+    GET_CLASS(Drive, drive);
+
+    std::string uuid = drive->getUuid();
+
+    char *buf = static_cast<char *>(malloc(uuid.size() + 1));
+	memset(buf, 0, (uuid.size() + 1));
+    strncpy(buf, uuid.c_str(), uuid.size());
+
+    return static_cast<iolib_string_t>(buf);
+}
+
+/**
  * Returns a string containing the path to this drive's device node.
  */
 IOLIB_EXPORT iolib_string_t iolibDriveGetDevFile(iolib_drive_t _drive) {
@@ -280,6 +296,22 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
 }
 
 /**
+ * Returns a stringified UUID for this loader. There is no guarantee that the
+ * UUID is persistent.
+ */
+IOLIB_EXPORT iolib_string_t iolibLoaderGetUuid(iolib_loader_t _loader) {
+    GET_CLASS(Loader, loader);
+
+    std::string uuid = loader->getUuid();
+
+    char *buf = static_cast<char *>(malloc(uuid.size() + 1));
+	memset(buf, 0, (uuid.size() + 1));
+    strncpy(buf, uuid.c_str(), uuid.size());
+
+    return static_cast<iolib_string_t>(buf);
+}
+
+/**
  * Returns a string containing the path to this loaders device node.
  */
 IOLIB_EXPORT iolib_string_t iolibLoaderGetDevFile(iolib_loader_t _loader) {
@@ -373,6 +405,22 @@ IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t _element, ioli
     GET_CLASS(Element, element);
 
     return element->getAddress();
+}
+
+/**
+ * Returns a stringified UUID for this element. There is no guarantee that the
+ * UUID is persistent.
+ */
+IOLIB_EXPORT iolib_string_t iolibElementGetUuid(iolib_storage_element_t _element) {
+    GET_CLASS(Element, element);
+
+    std::string uuid = element->getUuid();
+
+    char *buf = static_cast<char *>(malloc(uuid.size() + 1));
+	memset(buf, 0, (uuid.size() + 1));
+    strncpy(buf, uuid.c_str(), uuid.size());
+
+    return static_cast<iolib_string_t>(buf);
 }
 
 /**

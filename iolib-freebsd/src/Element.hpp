@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <cstdint>
 #include <string>
+#include <boost/uuid/uuid.hpp>
 
 #include <IOLib_types.h>
 
@@ -44,8 +45,12 @@ class Element {
             return this->volTag;
         }
 
+		std::string getUuid();
+
     private:
         Loader *parent;
+
+		boost::uuids::uuid uuid;
 
         // Type of the element
         iolib_storage_element_type_t type;

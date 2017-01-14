@@ -5,6 +5,7 @@
 #define DRIVE_HPP
 
 #include <fcntl.h>
+#include <boost/uuid/uuid.hpp>
 
 #include <IOLib_types.h>
 
@@ -14,6 +15,8 @@ class Drive {
 	public:
 		Drive(const char *, const char *);
 		~Drive();
+
+		std::string getUuid();
 
 		iolib_string_t getDeviceFile();
 
@@ -33,6 +36,8 @@ class Drive {
 		size_t readTape(void *, size_t, iolib_error_t *);
 
 	private:
+		boost::uuids::uuid uuid;
+
 		int saUnitNumber;
 
 		const char *devSa, *devSaCtl, *devPass;

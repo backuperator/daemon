@@ -90,6 +90,13 @@ typedef iolib_string_t (*_iolib_drive_get_name_t)(iolib_drive_t);
 IOLIB_EXTERN _iolib_drive_get_name_t iolibDriveGetName;
 
 /**
+ * Returns a stringified UUID for this drive. There is no guarantee that the
+ * UUID is persistent.
+ */
+typedef iolib_string_t (*_iolib_drive_get_uuid_t)(iolib_drive_t);
+IOLIB_EXTERN _iolib_drive_get_uuid_t iolibDriveGetUuid;
+
+/**
  * Returns a string containing the path to this drive's device node.
  */
 typedef iolib_string_t (*_iolib_drive_get_devfile_t)(iolib_drive_t);
@@ -216,6 +223,13 @@ typedef iolib_string_t (*_iolib_loader_get_name_t)(iolib_loader_t);
 IOLIB_EXTERN _iolib_loader_get_name_t iolibLoaderGetName;
 
 /**
+ * Returns a stringified UUID for this loader. There is no guarantee that the
+ * UUID is persistent.
+ */
+typedef iolib_string_t (*_iolib_loader_get_uuid_t)(iolib_loader_t);
+IOLIB_EXTERN _iolib_loader_get_uuid_t iolibLoaderGetUuid;
+
+/**
  * Returns a string containing the path to this loaders device node.
  */
 typedef iolib_string_t (*_iolib_loader_get_devfile_t)(iolib_loader_t);
@@ -271,6 +285,13 @@ IOLIB_EXTERN _iolib_loader_get_elements_t iolibLoaderGetElements;
  */
 typedef off_t (*_iolib_element_get_address_t)(iolib_storage_element_t, iolib_error_t *);
 IOLIB_EXTERN _iolib_element_get_address_t iolibElementGetAddress;
+
+/**
+ * Returns a stringified UUID for this element. There is no guarantee that the
+ * UUID is persistent.
+ */
+typedef iolib_string_t (*_iolib_element_get_uuid_t)(iolib_storage_element_t);
+IOLIB_EXTERN _iolib_element_get_uuid_t iolibElementGetUuid;
 
 /**
  * Get some flags that describe this storage element. This can be used to

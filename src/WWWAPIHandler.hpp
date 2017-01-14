@@ -9,6 +9,8 @@
 #include <string>
 #include <json.hpp>
 
+#include "IOLib.h"
+
 class WWWAPIHandler {
 	public:
 		WWWAPIHandler();
@@ -18,6 +20,7 @@ class WWWAPIHandler {
 
 	private:
 		nlohmann::json _getAllLibraries();
+		size_t _getNumElementsForLoader(iolib_loader_t);
 };
 
 #endif

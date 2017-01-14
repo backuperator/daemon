@@ -72,7 +72,7 @@ MainLoop::MainLoop() {
 
             //Check if path is within web_root_path
             if(distance(web_root_path.begin(), web_root_path.end())>distance(path.begin(), path.end()) ||
-            !equal(web_root_path.begin(), web_root_path.end(), path.begin())) {
+               !equal(web_root_path.begin(), web_root_path.end(), path.begin())) {
                 throw invalid_argument("path must be within root path");
             } if(boost::filesystem::is_directory(path)) {
                 path /= "index.html";

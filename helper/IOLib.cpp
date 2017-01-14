@@ -15,6 +15,7 @@ _iolib_enumerate_devices_t iolibEnumerateDevices;
 _iolib_enumerate_devices_free_t iolibEnumerateDevicesFree;
 
 _iolib_drive_get_name_t iolibDriveGetName;
+_iolib_drive_get_uuid_t iolibDriveGetUuid;
 _iolib_drive_get_devfile_t iolibDriveGetDevFile;
 _iolib_drive_get_status_t iolibDriveGetStatus;
 _iolib_drive_get_position_t iolibDriveGetPosition;
@@ -30,6 +31,7 @@ _iolib_drive_read_t iolibDriveRead;
 _iolib_drive_is_at_end_t iolibDriveIsEOM;
 
 _iolib_loader_get_name_t iolibLoaderGetName;
+_iolib_loader_get_uuid_t iolibLoaderGetUuid;
 _iolib_loader_get_devfile_t iolibLoaderGetDevFile;
 _iolib_loader_get_num_elements_t iolibLoaderGetNumElements;
 _iolib_loader_do_inventory_t iolibLoaderPerformInventory;
@@ -38,6 +40,7 @@ _iolib_loader_exchange_t iolibLoaderExchange;
 _iolib_loader_get_elements_t iolibLoaderGetElements;
 
 _iolib_element_get_address_t iolibElementGetAddress;
+_iolib_element_get_uuid_t iolibElementGetUuid;
 _iolib_element_get_flags_t iolibElementGetFlags;
 _iolib_element_get_label_t iolibElementGetLabel;
 
@@ -65,6 +68,7 @@ void iolibLoadLib() {
     IOLIB_RESOLVE_FUNC(iolibEnumerateDevicesFree);
 
     IOLIB_RESOLVE_FUNC(iolibDriveGetName);
+	IOLIB_RESOLVE_FUNC(iolibDriveGetUuid);
 	IOLIB_RESOLVE_FUNC(iolibDriveGetDevFile);
     IOLIB_RESOLVE_FUNC(iolibDriveGetStatus);
     IOLIB_RESOLVE_FUNC(iolibDriveGetPosition);
@@ -80,6 +84,7 @@ void iolibLoadLib() {
     IOLIB_RESOLVE_FUNC(iolibDriveIsEOM);
 
     IOLIB_RESOLVE_FUNC(iolibLoaderGetName);
+	IOLIB_RESOLVE_FUNC(iolibLoaderGetUuid);
 	IOLIB_RESOLVE_FUNC(iolibLoaderGetDevFile);
     IOLIB_RESOLVE_FUNC(iolibLoaderGetNumElements);
     IOLIB_RESOLVE_FUNC(iolibLoaderPerformInventory);
@@ -88,6 +93,8 @@ void iolibLoadLib() {
     IOLIB_RESOLVE_FUNC(iolibLoaderGetElements);
 
     IOLIB_RESOLVE_FUNC(iolibElementGetAddress);
+	IOLIB_RESOLVE_FUNC(iolibElementGetUuid);
+	
     IOLIB_RESOLVE_FUNC(iolibElementGetFlags);
     IOLIB_RESOLVE_FUNC(iolibElementGetLabel);
 

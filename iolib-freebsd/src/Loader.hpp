@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <vector>
 #include <atomic>
+#include <boost/uuid/uuid.hpp>
 
 #include <IOLib_types.h>
 
@@ -23,6 +24,8 @@ class Loader {
         Loader(const char *, const char *);
         ~Loader();
 
+		std::string getUuid();
+
 		iolib_string_t getDeviceFile();
 
         size_t getNumElementsForType(iolib_storage_element_type_t);
@@ -32,6 +35,8 @@ class Loader {
         iolib_error_t moveElement(Element *, Element *);
 
     private:
+		boost::uuids::uuid uuid;
+
         const char *devCh, *devPass;
         int fdCh = -1, fdPass = -1;
         std::atomic_int fdChRefs, fdPassRefs;

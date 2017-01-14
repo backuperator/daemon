@@ -2,6 +2,9 @@
 #include "Loader.hpp"
 
 #include <glog/logging.h>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include <sys/chio.h>
 
 namespace iolibbsd {
@@ -26,6 +29,10 @@ Element::Element(Loader *loader, iolib_storage_element_type_t type,
     this->volTag = _stringFromChVolTag(chElement->ces_pvoltag);
 
     _parseChElementFlags(chElement->ces_flags);
+
+	// Generate UUID
+	boost::uuids::basic_random_generator<boost::mt19937> gen;
+	this->uuid = gen();
 }
 
 /**
@@ -78,6 +85,13 @@ void Element::_parseChElementFlags(u_char flagsIn) {
  */
 std::string Element::_stringFromChVolTag(changer_voltag_t tag) {
     return std::string(reinterpret_cast<char*>(&tag.cv_volid));
+}
+
+/**
+ * Return a stringified version of the UUID.
+ */
+std::string Element::getUuid() {
+	return boost::uuids::to_string(this->uuid);
 }
 
 } // namespace iolibbsd

@@ -1,4 +1,6 @@
 #include <glog/logging.h>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <sys/chio.h>
 #include <sys/ioctl.h>
@@ -28,6 +30,10 @@ Loader::Loader(const char *ch, const char *pass) {
 
     // Close the file handle to the device
     _closeCh();
+
+	// Generate UUID
+	boost::uuids::basic_random_generator<boost::mt19937> gen;
+	this->uuid = gen();
 }
 
 Loader::~Loader() {
@@ -46,6 +52,13 @@ iolib_string_t Loader::getDeviceFile() {
 	iolib_string_t string = static_cast<iolib_string_t>(malloc(256));
 	strncpy(string, this->devCh, 256);
 	return string;
+}
+
+/**
+ * Return a stringified version of the UUID.
+ */
+std::string Loader::getUuid() {
+	return boost::uuids::to_string(this->uuid);
 }
 
 /**

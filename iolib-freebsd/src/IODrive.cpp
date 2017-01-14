@@ -1,4 +1,6 @@
 #include <glog/logging.h>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <sys/mtio.h>
 #include <sys/ioctl.h>
@@ -24,6 +26,10 @@ Drive::Drive(const char *sa, const char *pass) {
 
     // Determine maximum IO size (for writes/reads)
     _getMaxIOSize();
+
+	// Generate UUID
+	boost::uuids::basic_random_generator<boost::mt19937> gen;
+	this->uuid = gen();
 }
 
 /**
@@ -45,6 +51,13 @@ iolib_string_t Drive::getDeviceFile() {
 	iolib_string_t string = static_cast<iolib_string_t>(malloc(256));
 	strncpy(string, this->devSa, 256);
 	return string;
+}
+
+/**
+ * Return a stringified version of the UUID.
+ */
+std::string Drive::getUuid() {
+	return boost::uuids::to_string(this->uuid);
 }
 
 /**
