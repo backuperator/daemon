@@ -59,6 +59,7 @@ json WWWAPIHandler::_getAllLibraries() {
     vector<json> libraries;
     vector<json> drives;
     vector<json> loaders;
+	vector<json> elements;
 
     // Fetch all libraries
 	iolib_library_t libs[8];
@@ -72,10 +73,12 @@ json WWWAPIHandler::_getAllLibraries() {
         for(size_t j = 0; j < libs[i].numDrives; j++) {
             iolib_drive_t drive = libs[i].drives[j];
 
+			// Get UUID
 			iolib_string_t rawUuid = iolibDriveGetUuid(drive);
 			string uuid = string(rawUuid);
 			iolibStringFree(rawUuid);
 
+			// Create drive object
             drives.push_back({
                 {"id", uuid},
                 {"name", iolibDriveGetName(drive)},
@@ -89,19 +92,53 @@ json WWWAPIHandler::_getAllLibraries() {
         for(size_t j = 0; j < libs[i].numLoaders; j++) {
             iolib_loader_t loader = libs[i].loaders[j];
 
+			// Get UUID
 			iolib_string_t rawUuid = iolibLoaderGetUuid(loader);
 			string uuid = string(rawUuid);
 			iolibStringFree(rawUuid);
 
-			// Determine the number of elements in this loader
-			size_t numElements = _getNumElementsForLoader(loader);
 
-			LOG(INFO) << "Have " << numElements << " elements in loader";
+			// Process all of the elements
+			vector<string> loaderElementIds;
+			size_t numElements = 0;
 
+			static const iolib_storage_element_type_t types[] = {
+				kStorageElementTransport,
+				kStorageElementDrive,
+				kStorageElementPortal,
+				kStorageElementSlot
+			};
+
+			for(size_t i = 0; i < (sizeof(types) / sizeof(*types)); i++) {
+				// Get the number of elements
+				size_t elmsOfType = iolibLoaderGetNumElements(loader, types[i]);
+				numElements += elmsOfType;
+
+				iolib_storage_element_t elms[elmsOfType];
+
+				// Get all the elements
+				iolibLoaderGetElements(loader, types[i],
+					reinterpret_cast<iolib_storage_element_t *>(&elms),
+					elmsOfType);
+
+				// ...and now, process them.
+				for(size_t j = 0; j < elmsOfType; j++) {
+					iolib_storage_element_t element = elms[j];
+
+					json elementJson = _jsonForElement(element);
+
+					elements.push_back(elementJson);
+					loaderElementIds.push_back(elementJson["id"]);
+				}
+			}
+
+
+			// Create loader entry
             loaders.push_back({
                 {"id", uuid},
                 {"name", iolibLoaderGetName(loader)},
-                {"file", iolibLoaderGetDevFile(loader)}
+                {"file", iolibLoaderGetDevFile(loader)},
+				{"elements", loaderElementIds}
                 // {"library", libs[i].id}
             });
             loaderIds.push_back(uuid);
@@ -120,22 +157,56 @@ json WWWAPIHandler::_getAllLibraries() {
     return {
         {"libraries", libraries},
         {"drives", drives},
-        {"loaders", loaders},
+		{"loaders", loaders},
+        {"element", elements},
     };
 }
 
 /**
- * Counts the number of elements in this loader: in our case, this consists of
- * storage elements and drives.
+ * Constructs a json object for a loader's storage element.
  */
-size_t WWWAPIHandler::_getNumElementsForLoader(iolib_loader_t loader) {
-    size_t numDrives = 0;
+json WWWAPIHandler::_jsonForElement(iolib_storage_element_t element) {
+	json elementJson;
 
-    // Get number of storage elements
-    numDrives += iolibLoaderGetNumElements(loader, kStorageElementSlot, NULL);
+	// Get UUID
+	iolib_string_t rawUuid = iolibElementGetUuid(element);
+	string uuid = string(rawUuid);
+	iolibStringFree(rawUuid);
 
-    // And number of drives
-    numDrives += iolibLoaderGetNumElements(loader, kStorageElementDrive, NULL);
+	elementJson["id"] = uuid;
+	// Get logical element address
+	elementJson["address"] = iolibElementGetAddress(element);
+	// Check the flags - is it empty?
+	elementJson["isEmpty"] = !(iolibElementGetFlags(element) & kStorageElementFull);
 
-    return numDrives;
+	// Populate the type
+	switch(iolibElementGetType(element)) {
+		case kStorageElementDrive:
+			elementJson["kind"] = "drive";
+			break;
+
+		case kStorageElementSlot:
+			elementJson["kind"] = "storage";
+			break;
+
+		case kStorageElementPortal:
+			elementJson["kind"] = "portal";
+			break;
+
+		case kStorageElementTransport:
+			elementJson["kind"] = "transport";
+			break;
+
+		default:
+			break;
+	}
+
+	// And lastly, the volume tag.
+	iolib_string_t rawLabel = iolibElementGetLabel(element);
+	string label = string(rawLabel);
+	iolibStringFree(rawLabel);
+
+	elementJson["label"] = label;
+
+	return elementJson;
 }

@@ -20,7 +20,7 @@ class WWWAPIHandler {
 
 	private:
 		nlohmann::json _getAllLibraries();
-		size_t _getNumElementsForLoader(iolib_loader_t);
+		nlohmann::json _jsonForElement(iolib_storage_element_t);
 };
 
 #endif

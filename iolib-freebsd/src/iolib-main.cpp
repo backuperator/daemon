@@ -325,8 +325,7 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetDevFile(iolib_loader_t _loader) {
  * loader has.
  */
 IOLIB_EXPORT size_t iolibLoaderGetNumElements(iolib_loader_t _loader,
-                                              iolib_storage_element_type_t type,
-                                              iolib_error_t *outErr) {
+                                              iolib_storage_element_type_t type) {
     GET_CLASS(Loader, loader);
 
     return loader->getNumElementsForType(type);
@@ -401,7 +400,7 @@ IOLIB_EXPORT iolib_error_t iolibLoaderGetElements(iolib_loader_t _loader,
  * Returns the logical address of the storage element. This is specific to the
  * loader in use, and how it correlates to a physical slot is undefined.
  */
-IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t _element, iolib_error_t *outErr) {
+IOLIB_EXPORT off_t iolibElementGetAddress(iolib_storage_element_t _element) {
     GET_CLASS(Element, element);
 
     return element->getAddress();
@@ -430,8 +429,7 @@ IOLIB_EXPORT iolib_string_t iolibElementGetUuid(iolib_storage_element_t _element
  *
  * NOTE: Flags are logically ORed together.
  */
-IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_element_t _element,
-                                                                iolib_error_t *outErr) {
+IOLIB_EXPORT iolib_storage_element_flags_t iolibElementGetFlags(iolib_storage_element_t _element) {
     GET_CLASS(Element, element);
 
     return element->getFlags();
@@ -445,13 +443,23 @@ IOLIB_EXPORT iolib_string_t iolibElementGetLabel(iolib_storage_element_t _elemen
     GET_CLASS(Element, element);
 
     // get length in bytes for the string
-    size_t length = element->getVolumeTag().size();
-    char *buf = static_cast<char *>(malloc(length + 1));
-    strncpy(buf, element->getVolumeTag().c_str(), length);
+    std::string tag = element->getVolumeTag();
+
+    char *buf = static_cast<char *>(malloc(tag.size() + 1));
+	memset(buf, 0, (tag.size() + 1));
+    strncpy(buf, tag.c_str(), tag.size());
 
     return static_cast<iolib_string_t>(buf);
 }
 
+/**
+ * Gets the type of element.
+ */
+IOLIB_EXPORT iolib_storage_element_type_t iolibElementGetType(iolib_storage_element_t _element) {
+	GET_CLASS(Element, element);
+
+	return element->getType();
+}
 
 /////////////////////////////// Session Handling ///////////////////////////////
 /**

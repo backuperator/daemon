@@ -239,7 +239,7 @@ IOLIB_EXTERN _iolib_loader_get_devfile_t iolibLoaderGetDevFile;
  * Returns the number of storage elements of the given type that a certain
  * loader has.
  */
-typedef size_t (*_iolib_loader_get_num_elements_t)(iolib_loader_t, iolib_storage_element_type_t, iolib_error_t *);
+typedef size_t (*_iolib_loader_get_num_elements_t)(iolib_loader_t, iolib_storage_element_type_t);
 IOLIB_EXTERN _iolib_loader_get_num_elements_t iolibLoaderGetNumElements;
 
 /**
@@ -283,7 +283,7 @@ IOLIB_EXTERN _iolib_loader_get_elements_t iolibLoaderGetElements;
  * Returns the logical address of the storage element. This is specific to the
  * loader in use, and how it correlates to a physical slot is undefined.
  */
-typedef off_t (*_iolib_element_get_address_t)(iolib_storage_element_t, iolib_error_t *);
+typedef off_t (*_iolib_element_get_address_t)(iolib_storage_element_t);
 IOLIB_EXTERN _iolib_element_get_address_t iolibElementGetAddress;
 
 /**
@@ -300,7 +300,7 @@ IOLIB_EXTERN _iolib_element_get_uuid_t iolibElementGetUuid;
  *
  * NOTE: Flags are logically ORed together.
  */
-typedef iolib_storage_element_flags_t (*_iolib_element_get_flags_t)(iolib_storage_element_t, iolib_error_t *);
+typedef iolib_storage_element_flags_t (*_iolib_element_get_flags_t)(iolib_storage_element_t);
 IOLIB_EXTERN _iolib_element_get_flags_t iolibElementGetFlags;
 
 /**
@@ -309,6 +309,12 @@ IOLIB_EXTERN _iolib_element_get_flags_t iolibElementGetFlags;
  */
 typedef iolib_string_t (*_iolib_element_get_label_t)(iolib_storage_element_t);
 IOLIB_EXTERN _iolib_element_get_label_t iolibElementGetLabel;
+
+/**
+ * Gets the type of element.
+ */
+typedef iolib_storage_element_type_t (*_iolib_element_get_type_t)(iolib_storage_element_t);
+IOLIB_EXTERN _iolib_element_get_type_t iolibElementGetType;
 
 
 /////////////////////////////// Session Handling ///////////////////////////////

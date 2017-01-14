@@ -43,6 +43,7 @@ _iolib_element_get_address_t iolibElementGetAddress;
 _iolib_element_get_uuid_t iolibElementGetUuid;
 _iolib_element_get_flags_t iolibElementGetFlags;
 _iolib_element_get_label_t iolibElementGetLabel;
+_iolib_element_get_type_t iolibElementGetType;
 
 _iolib_open_session_t iolibOpenSession;
 _iolib_close_session_t iolibCloseSession;
@@ -94,9 +95,9 @@ void iolibLoadLib() {
 
     IOLIB_RESOLVE_FUNC(iolibElementGetAddress);
 	IOLIB_RESOLVE_FUNC(iolibElementGetUuid);
-	
     IOLIB_RESOLVE_FUNC(iolibElementGetFlags);
     IOLIB_RESOLVE_FUNC(iolibElementGetLabel);
+	IOLIB_RESOLVE_FUNC(iolibElementGetType);
 
     IOLIB_RESOLVE_FUNC(iolibOpenSession);
     IOLIB_RESOLVE_FUNC(iolibCloseSession);
