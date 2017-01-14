@@ -90,16 +90,16 @@ int main(int argc, char *argv[]) {
 		// List off all four types of elements
 		for(int i = 0; i < 4; i++) {
 			iolibLoaderGetElements(loader, types[i], (iolib_storage_element_t *) &elements, MAX_ELEMENTS);
-			numElementsInType = iolibLoaderGetNumElements(loader, types[i], NULL);
+			numElementsInType = iolibLoaderGetNumElements(loader, types[i]);
 
 			LOG(INFO) << "" << numElementsInType << " elements of type " << typesStrings[i];
 
 			for(int j = 0; j < numElementsInType; j++) {
 				iolib_storage_element_t element = elements[j];
 
-				LOG(INFO) << "\tElement " << iolibElementGetAddress(element, NULL) << ": "
+				LOG(INFO) << "\tElement " << iolibElementGetAddress(element) << ": "
 						  << "voltag = " << iolibElementGetLabel(element) << " "
-						  << "flags: " << ElementFlagsToString(iolibElementGetFlags(element, NULL));
+						  << "flags: " << ElementFlagsToString(iolibElementGetFlags(element));
 			}
 		}
 	}
@@ -291,13 +291,13 @@ static iolib_storage_element_t GetElementAtIndex(iolib_loader_t loader, off_t in
 	// get all elements of this type pls
 	iolibLoaderGetElements(loader, type,
 		(iolib_storage_element_t *) &elements, MAX_ELEMENTS);
-	numElementsInType = iolibLoaderGetNumElements(loader, type, NULL);
+	numElementsInType = iolibLoaderGetNumElements(loader, type);
 
 	// iterate through them all
 	for(int j = 0; j < numElementsInType; j++) {
 		iolib_storage_element_t element = elements[j];
 
-		if(iolibElementGetAddress(element, NULL) == index) {
+		if(iolibElementGetAddress(element) == index) {
 			return element;
 		}
 	}
