@@ -37,7 +37,7 @@ Drive::Drive(const char *sa, const char *pass) {
  */
 Drive::~Drive() {
     // Use the close method, but force it by setting reference count to 1
-    LOG_IF(WARNING, this->fdSaRefs > 1) << "More than one open reference on file descriptor at dellocation";
+    LOG_IF(WARNING, this->fdSaRefs > 1) << "More than one open reference on file descriptor at dellocation!";
 
     this->fdSaRefs = 1;
     _closeSa();

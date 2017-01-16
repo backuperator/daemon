@@ -99,7 +99,13 @@ IOLIB_EXPORT iolib_string_t iolibDriveGetName(iolib_drive_t _drive) {
     GET_CLASS(Drive, drive);
 
     // TODO: implement
-    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
+    std::string uuid = "<<< UNIMPLIMENTED >>>";
+
+    char *buf = static_cast<char *>(malloc(uuid.size() + 1));
+	memset(buf, 0, (uuid.size() + 1));
+    strncpy(buf, uuid.c_str(), uuid.size());
+
+    return static_cast<iolib_string_t>(buf);
 }
 
 /**
@@ -292,7 +298,13 @@ IOLIB_EXPORT iolib_string_t iolibLoaderGetName(iolib_loader_t _loader) {
     GET_CLASS(Loader, loader);
 
     // TODO: implement
-    return (iolib_string_t) "<<< UNIMPLIMENTED >>>";
+    std::string uuid = "<<< UNIMPLIMENTED >>>";
+
+    char *buf = static_cast<char *>(malloc(uuid.size() + 1));
+	memset(buf, 0, (uuid.size() + 1));
+    strncpy(buf, uuid.c_str(), uuid.size());
+
+    return static_cast<iolib_string_t>(buf);
 }
 
 /**

@@ -21,6 +21,8 @@ class WWWAPIHandler {
 	private:
 		nlohmann::json _getAllLibraries();
 		nlohmann::json _jsonForElement(iolib_storage_element_t);
+
+		std::string _stdStringFromIoLibString(iolib_string_t);
 };
 
 #endif

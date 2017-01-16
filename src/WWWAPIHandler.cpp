@@ -74,15 +74,13 @@ json WWWAPIHandler::_getAllLibraries() {
             iolib_drive_t drive = libs[i].drives[j];
 
 			// Get UUID
-			iolib_string_t rawUuid = iolibDriveGetUuid(drive);
-			string uuid = string(rawUuid);
-			iolibStringFree(rawUuid);
+			string uuid = _stdStringFromIoLibString(iolibDriveGetUuid(drive));
 
 			// Create drive object
             drives.push_back({
                 {"id", uuid},
-                {"name", iolibDriveGetName(drive)},
-                {"file", iolibDriveGetDevFile(drive)}
+                {"name", _stdStringFromIoLibString(iolibDriveGetName(drive))},
+                {"file", _stdStringFromIoLibString(iolibDriveGetDevFile(drive))}
                 // {"library", libs[i].id}
             });
             driveIds.push_back(uuid);
@@ -92,10 +90,7 @@ json WWWAPIHandler::_getAllLibraries() {
         for(size_t j = 0; j < libs[i].numLoaders; j++) {
             iolib_loader_t loader = libs[i].loaders[j];
 
-			// Get UUID
-			iolib_string_t rawUuid = iolibLoaderGetUuid(loader);
-			string uuid = string(rawUuid);
-			iolibStringFree(rawUuid);
+			string uuid = _stdStringFromIoLibString(iolibLoaderGetUuid(loader));
 
 
 			// Process all of the elements
@@ -136,8 +131,8 @@ json WWWAPIHandler::_getAllLibraries() {
 			// Create loader entry
             loaders.push_back({
                 {"id", uuid},
-                {"name", iolibLoaderGetName(loader)},
-                {"file", iolibLoaderGetDevFile(loader)},
+                {"name", _stdStringFromIoLibString(iolibLoaderGetName(loader))},
+                {"file", _stdStringFromIoLibString(iolibLoaderGetDevFile(loader))},
 				{"elements", loaderElementIds}
                 // {"library", libs[i].id}
             });
@@ -146,8 +141,8 @@ json WWWAPIHandler::_getAllLibraries() {
 
         // Insert the JSON object for the library.
         libraries.push_back({
-            {"id", libs[i].id},
-            {"name", libs[i].name},
+            {"id", _stdStringFromIoLibString(libs[i].id)},
+            {"name", _stdStringFromIoLibString(libs[i].name)},
             {"drives", driveIds},
             {"loaders", loaderIds},
         });
@@ -169,11 +164,7 @@ json WWWAPIHandler::_jsonForElement(iolib_storage_element_t element) {
 	json elementJson;
 
 	// Get UUID
-	iolib_string_t rawUuid = iolibElementGetUuid(element);
-	string uuid = string(rawUuid);
-	iolibStringFree(rawUuid);
-
-	elementJson["id"] = uuid;
+	elementJson["id"] = _stdStringFromIoLibString(iolibElementGetUuid(element));
 	// Get logical element address
 	elementJson["address"] = iolibElementGetAddress(element);
 	// Check the flags - is it empty?
@@ -210,3 +201,14 @@ json WWWAPIHandler::_jsonForElement(iolib_storage_element_t element) {
 
 	return elementJson;
 }
+
+/**
+ * Creates a standard library string from an iolib string, freeing that iolib
+ * string once done.
+ */
+string WWWAPIHandler::_stdStringFromIoLibString(iolib_string_t in) {
+	string out = string(in);
+	iolibStringFree(in);
+
+	 return out;
+ }
