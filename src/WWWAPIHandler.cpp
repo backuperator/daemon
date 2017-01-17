@@ -49,7 +49,9 @@ json WWWAPIHandler::handle(string method, string url, json params) {
     }
 
 	// We should never get down here
-	return {};
+	return {
+		{ "error", "Unknown API request" }
+	};
 }
 
 /**
