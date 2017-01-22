@@ -155,7 +155,7 @@ json WWWAPIHandler::_getAllLibraries() {
         {"libraries", libraries},
         {"drives", drives},
 		{"loaders", loaders},
-        {"element", elements},
+        {"elements", elements},
     };
 }
 
